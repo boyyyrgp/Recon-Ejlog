@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>REKONSILIATOR - Command Center v4.1 (Secure & Smart AI)</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;800&family=Mr+Dafoe&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        signature: ['Mr Dafoe', 'cursive'],
+                    },
+                    colors: {
+                        dark: '#0b1120',
+                        card: '#1e293b',
+                        primary: '#3b82f6',
+                        accent: '#06b6d4',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        purple: '#8b5cf6',
+                        neon: '#00f3ff',
+                        jalin: '#7f1d1d',
+                        jalinLight: '#dc2626',
+                        jalinAccent: '#fecaca',
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'scan': 'scan 2s linear infinite',
+                        'grid-scan': 'gridScan 15s linear infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        },
+                        gridScan: {
+                            '0%': { transform: 'translate(0, 0)' },
+                            '100%': { transform: 'translate(-50px, -50px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-primary selection:text-white login-gate-active">
+
+    <!-- LOGIN GATE (SECURITY) - ENHANCED -->
+    <div id="login-gate" class="fixed inset-0 z-[100] bg-[#050914] flex items-center justify-center">
+        <div class="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
+            <div class="scanner-line"></div>
+            <div class="scan-grid"></div>
+            <div class="cyber-overlay"></div>
+            <div class="laser-beam"></div>
+        </div>
+        <div class="text-center w-full max-w-md p-8 relative z-10">
+            <div class="mb-8">
+                <div class="w-24 h-24 mx-auto bg-slate-900 rounded-full flex items-center justify-center border-2 border-green-500/50 shadow-[0_0_30px_rgba(0,255,0,0.3)] mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h1 class="text-4xl font-black text-white tracking-tighter">SECURITY <span class="text-green-500">GATE</span></h1>
+                <p class="text-slate-400 font-mono text-xs mt-2 tracking-[0.2em]">AUTHORIZED PERSONNEL ONLY</p>
+            </div>
+            
+            <div class="login-container">
+                <div class="relative z-10">
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 text-left">Access Code</label>
+                        <input type="password" id="passwordInput" class="glass-input w-full p-4 rounded-xl text-center text-xl font-bold tracking-[0.5em] placeholder:tracking-normal placeholder:text-slate-700 focus:shadow-[0_0_30px_rgba(0,255,0,0.2)]" placeholder="••••••••">
+                    </div>
+                    <div id="loginMsg" class="h-4 text-[10px] font-mono font-bold text-danger mb-4 tracking-wider opacity-0 transition-opacity">INCORRECT PASSWORD</div>
+                    <button id="loginBtn" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition-all shadow-[0_0_20px_rgba(0,255,0,0.3)] hover:shadow-[0_0_30px_rgba(0,255,0,0.5)] uppercase tracking-widest text-sm">
+                        Unlock System
+                    </button>
+                </div>
+                <!-- Background decoration -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-50"></div>
+            </div>
+            <div class="mt-8 text-[20px] font-mono text-slate-700">
+                SYSTEM ID: BG-JAMBI-SECURE-ACCESS
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR - ENHANCED -->
+    <nav class="h-24 glass-panel sticky top-0 z-50 border-b border-slate-700/50 px-6 md:px-12 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="relative w-8 h-8 flex items-center justify-center">
+                 <div class="absolute w-full h-full bg-neon/20 rounded-full animate-ping"></div>
+                 <div class="w-4 h-4 bg-neon rounded-full shadow-[0_0_20px_#00f3ff]"></div>
+            </div>
+            <span class="font-mono text-2xl md:text-3xl font-black tracking-wider text-white drop-shadow-lg">
+                AUTOMATIC RECONCILIATION.<span class="text-primary">SYSTEM</span>_v7
+            </span>
+        </div>
+        <div class="hidden md:flex items-center gap-6 text-lg font-mono text-slate-300 font-bold">
+            <div class="flex flex-col items-end leading-tight group">
+                <span class="text-sm text-slate-500 tracking-widest uppercase group-hover:text-neon transition-colors">STATUS</span>
+                <span class="text-success drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-xl">SYSTEM SECURE</span>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div class="flex flex-col items-end leading-tight group">
+                <span class="text-sm text-slate-500 tracking-widest uppercase group-hover:text-neon transition-colors">LOCATION</span>
+                <span class="text-white text-xl">BG JAMBI</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col relative p-6 md:p-10 overflow-hidden">
+        
+        <!-- DASHBOARD MENU (HOME) - UPDATED LAYOUT -->
+        <div id="page-dashboard" class="page-section flex flex-col items-center justify-center min-h-[75vh] w-full max-w-7xl mx-auto transition-all duration-500">
+            
+            <div class="text-center mb-20 space-y-8 relative z-10">
+                <!-- Background Glow -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-64 bg-primary/10 blur-[100px] rounded-full -z-10"></div>
+                
+                <h1 class="text-6xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                    REKONSILIATOR
+                </h1>
+                <div class="inline-flex items-center gap-6 px-10 py-5 border border-slate-700/50 rounded-full bg-dark/60 backdrop-blur-xl shadow-2xl">
+                    <span class="w-2 h-2 bg-neon rounded-full shadow-[0_0_10px_#00f3ff]"></span>
+                    <p class="font-mono text-slate-300 tracking-[0.3em] text-lg md:text-xl font-bold uppercase">
+                        Accurate <span class="text-slate-600 mx-2">//</span> Intelligent <span class="text-slate-600 mx-2">//</span> Predictive
+                    </p>
+                    <span class="w-2 h-2 bg-neon rounded-full shadow-[0_0_10px_#00f3ff]"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl relative z-10">
+                <!-- Left Column - Machine Buttons (2/3 width) -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- VENDOR A -->
+                    <div onclick="navigateTo('page-hyosung')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">01</div>
+                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR A</span>
+                        </div>
+                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">ATM</span>
+                        <div>
+                            <h3 class="text-3xl font-black text-white group-hover:text-accent transition-colors mb-2">HYOSUNG</h3>
+                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-accent transition-all duration-500 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- VENDOR B -->
+                    <div onclick="navigateTo('page-wincor')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">02</div>
+                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR B</span>
+                        </div>
+                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">ATM</span>
+                        <div>
+                            <h3 class="text-3xl font-black text-white group-hover:text-accent transition-colors mb-2">WINCOR</h3>
+                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-accent transition-all duration-500 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- VENDOR C -->
+                    <div onclick="navigateTo('page-ncr')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">03</div>
+                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR C</span>
+                        </div>
+                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">ATM</span>
+                        <div>
+                            <h3 class="text-3xl font-black text-white group-hover:text-accent transition-colors mb-2">NCR</h3>
+                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-accent transition-all duration-500 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- ATM JALIN - NEW BUTTON (Updated) -->
+                    <div onclick="navigateTo('page-jalin')" class="btn-main glass-panel rounded-2xl p-8 h-30 flex flex-col justify-between cursor-pointer group border-t-4 border-t-white relative overflow-hidden hover:border-t-red-500 md:col-span-3" style="background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%); border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 66.666667%; margin: 0 auto;">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center border border-white/30 text-white font-bold font-mono text-xl group-hover:bg-white/30 transition-colors">04</div>
+                            <span class="font-mono text-xs font-bold text-white/80 uppercase tracking-widest border border-white/30 px-2 py-1 rounded">ATM JALIN</span>
+                        </div>
+                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">JALIN</span>
+                        <div>
+                            <h3 class="text-3xl font-black text-white group-hover:text-red-300 transition-colors mb-2">ATM JALIN</h3>
+                            <div class="h-1.5 w-12 bg-white/50 group-hover:w-full group-hover:bg-red-300 transition-all duration-500 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- CRM -->
+                    <div onclick="navigateTo('page-crm')" class="btn-main md:col-span-3 glass-panel rounded-2xl p-10 cursor-pointer group bg-gradient-to-r from-warning/10 to-transparent border-l-4 border-l-warning flex items-center justify-between h-56 hover:bg-warning/10 transition-all border-t border-t-transparent hover:border-t-slate-600/30">
+                        <div class="relative z-10">
+                            <span class="font-mono text-sm font-bold text-warning tracking-[0.3em] uppercase mb-3 block flex items-center gap-2">
+                                <span class="w-2 h-2 bg-warning rounded-full animate-pulse"></span> Cash Recycling Machine
+                            </span>
+                            <h3 class="text-5xl md:text-6xl font-black text-white tracking-tight group-hover:text-warning transition-colors">CRM HITACHI</h3>
+                        </div>
+                        <div class="h-32 w-32 rounded-full bg-warning/10 flex items-center justify-center group-hover:bg-warning/20 transition-all border border-warning/20 group-hover:scale-110 duration-500 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - User Guide (1/3 width) - Updated -->
+                <div class="lg:col-span-1">
+                    <div class="user-guide-box">
+                        <h3 class="user-guide-title">USER GUIDE</h3>
+                        <ol class="user-guide-list">
+                            <li>Copy Paste/drop file EJ Log sesuai periode hari replenish tanpa di potong</li>
+                            <li>Jika pada file EJ Log terdapat lebih dari satu periode maka App otomatis menganalisis periode terakhir</li>
+                            <li>Input data fisik remaining sesuai dengan hasil hitung fisik petugas CPC</li>
+                            <li>Jika terdapat kaset defect yang tidak terbaca pada saat replenish maka input manual jumlah total pagu replenish</li>
+                            <li>Click filter data</li>
+                            <li>Jika terjadi error atau hasil acak, potong EJ sesuai Periode replenish</li>
+                            <li>Aplikasi ini untuk membantu mempercepat penyelesaian tugas dan bukan untuk pengambilan keputusan, seluruh nilai yang di inut pada laporan akhir sepenuhnya di pertanggung jawabkan oleh managerial onduty atau terkait</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SUB PAGES ================= -->
+
+        <!-- PAGE: CRM HITACHI - WITH ENHANCED AI -->
+        <div id="page-crm" class="page-section hidden w-full max-w-[95vw] mx-auto fade-enter">
+            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+            </button>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Left Panel (Input & Controls) - Width: 3/12 -->
+                <div class="glass-panel rounded-2xl p-6 lg:col-span-3 h-fit border-l-4 border-l-warning flex flex-col gap-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-3xl font-black text-warning mb-1 tracking-tight">CRM ANALYSIS</h2>
+                            <div id="machineDisplay" class="font-mono text-xs text-slate-400 font-bold flex items-center gap-2 uppercase tracking-widest">
+                                <span class="w-2 h-2 bg-slate-600 rounded-full"></span>
+                                MACHINE: <span class="text-white">WAITING LOG...</span>
+                            </div>
+                        </div>
+                        <button onclick="resetForm('crm')" class="btn-reset">CLEAR FORM</button>
+                    </div>
+                    
+                    <!-- Dropzone -->
+                    <div class="drop-zone rounded-xl h-64 relative" id="dropzone-crm">
+                        <div class="drop-zone-overlay rounded-xl">
+                            <svg class="w-12 h-12 text-warning mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <span class="text-white font-bold text-sm">Drop Log File Here</span>
+                        </div>
+                        <textarea id="crmLogInput" class="glass-input w-full h-full rounded-xl p-4 text-[10px] font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log (.txt/.log) di sini..."></textarea>
+                        <input type="file" id="file-crm" class="hidden" multiple accept=".txt,.log">
+                    </div>
+
+                    <!-- Input Fisik -->
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-1 h-4 bg-warning"></div>
+                            <p class="text-xs font-bold text-slate-300 uppercase tracking-widest">Input Fisik Remaining</p>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold block mb-1">DENOM 100.000</label>
+                                <input type="number" id="crmPhys100" class="glass-input w-full p-3 rounded-lg text-right text-white font-bold text-lg" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold block mb-1">DENOM 50.000</label>
+                                <input type="number" id="crmPhys50" class="glass-input w-full p-3 rounded-lg text-right text-white font-bold text-lg" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="crmFilterButton" class="w-full py-4 bg-warning hover:bg-amber-400 text-black font-black text-xl rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
+                        JALANKAN ANALISA
+                    </button>
+
+                    <!-- ENHANCED AI Assistant -->
+                    <div class="ai-chat-box rounded-xl p-4 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-2 opacity-10"><svg class="w-16 h-16 text-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg></div>
+                        <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest"><span class="w-1.5 h-1.5 bg-purple rounded-full animate-pulse"></span> ENHANCED AI ANALYTIC</h4>
+                        <div id="ai-result-crm" class="ai-response-box mb-3 text-[11px] font-mono text-slate-300 leading-relaxed">
+                            <div class="text-neon">🤖 AI Assistant siap!</div>
+                            <div class="mt-2 text-[10px] text-slate-400">
+                                <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Suggestions -->
+                        <div class="mb-3">
+                            <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('crm')">Analisis Pattern Error</span>
+                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('crm')">Prediksi Replenish</span>
+                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('crm')">Ringkasan Jam Sibuk</span>
+                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('crm')">Deteksi Anomali</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="text" id="ai-input-crm" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
+                            <button onclick="askAI('crm')" class="bg-purple hover:bg-violet-600 text-white px-3 py-2 rounded text-xs font-bold tracking-wider">ANALYZE</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel (Results) - Width: 9/12 -->
+                <div class="lg:col-span-9 flex flex-col gap-6">
+                    
+                    <!-- TOP STATS (Wide Grid) -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+                        <!-- Init -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-slate-700 hover:border-slate-500 transition-colors overflow-hidden group">
+                            <div class="text-[10px] font-black font-mono text-slate-500 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-slate-300 transition-colors">INITIALIZE</div>
+                            <div id="initAmount" class="text-2xl lg:text-3xl font-mono font-black text-white whitespace-nowrap drop-shadow-md">0</div>
+                        </div>
+                        <!-- Disp -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-danger/30 hover:border-danger transition-colors overflow-hidden box-glow-danger group">
+                            <div class="text-[10px] font-black font-mono text-danger/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-danger transition-colors">DISPENSED</div>
+                            <div id="dispAmount" class="text-2xl lg:text-3xl font-mono font-black text-danger drop-shadow-[0_0_10px_rgba(239,68,68,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Dep -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-success/30 hover:border-success transition-colors overflow-hidden box-glow-success group">
+                            <div class="text-[10px] font-black font-mono text-success/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-success transition-colors">DEPOSITED</div>
+                            <div id="depAmount" class="text-2xl lg:text-3xl font-mono font-black text-success drop-shadow-[0_0_10px_rgba(16,185,129,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Rem -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-warning/30 hover:border-warning transition-colors overflow-hidden box-glow-warning group">
+                            <div class="text-[10px] font-black font-mono text-warning/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-warning transition-colors">REMAINING</div>
+                            <div id="remAmount" class="text-2xl lg:text-3xl font-mono font-black text-warning drop-shadow-[0_0_10px_rgba(245,158,11,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Fisik Rem (Calculated) -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-purple/30 hover:border-purple transition-colors overflow-hidden group">
+                            <div class="text-[10px] font-black font-mono text-purple/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-purple transition-colors">FISIK REM</div>
+                            <div id="crmTotalPhysAmount" class="text-2xl lg:text-3xl font-mono font-black text-purple drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                    </div>
+
+                    <!-- RECONCILIATION RESULT (Total) -->
+                    <div id="crmTotalReconBox" class="glass-panel p-8 rounded-2xl border flex flex-col justify-center items-center transition-all duration-500 w-full min-h-[180px]">
+                        <div class="text-xs font-black font-mono text-slate-500 mb-2 tracking-[0.3em] uppercase">HASIL REKONSILIASI (TOTAL)</div>
+                        <div id="crmTotalReconResult" class="text-5xl lg:text-6xl font-mono font-black text-slate-600 tracking-tight whitespace-nowrap py-2">MENUNGGU INPUT</div>
+                        <!-- Expression -->
+                        <div id="crmExpression" class="text-center mt-4 text-2xl lg:text-3xl font-mono font-black min-h-[40px] w-full drop-shadow-lg"></div>
+                    </div>
+
+                    <!-- TABLE DETAIL -->
+                    <div class="glass-panel rounded-xl overflow-hidden border border-slate-700/50 w-full">
+                        <table class="w-full text-base text-left">
+                            <thead class="text-xs font-black text-slate-400 uppercase bg-slate-900/80 border-b border-slate-700">
+                                <tr>
+                                    <th class="px-8 py-5 tracking-widest">KATEGORI</th>
+                                    <th class="px-8 py-5 text-center tracking-widest">100.000</th>
+                                    <th class="px-8 py-5 text-center tracking-widest">50.000</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-mono text-slate-200 divide-y divide-slate-700/30 text-sm">
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-slate-400 tracking-wide">INITIALIZE</td>
+                                    <td id="init100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="init50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-danger tracking-wide">DISPENSED</td>
+                                    <td id="disp100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="disp50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-success tracking-wide">DEPOSITED</td>
+                                    <td id="dep100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="dep50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="bg-warning/5 border-t-2 border-warning/20 hover:bg-warning/10 transition-colors">
+                                    <td class="px-8 py-5 font-black text-warning tracking-widest">REMAINING</td>
+                                    <td id="rem100" class="px-8 py-5 text-center text-warning font-black text-2xl">0</td>
+                                    <td id="rem50" class="px-8 py-5 text-center text-warning font-black text-2xl">0</td>
+                                </tr>
+                                <tr class="bg-purple/5 border-t border-slate-700/50 hover:bg-purple/10 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-purple tracking-widest">FISIK REMAINING</td>
+                                    <td id="crmResPhys100" class="px-8 py-4 text-center font-black text-xl text-white">0</td>
+                                    <td id="crmResPhys50" class="px-8 py-4 text-center font-black text-xl text-white">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LISTS (Cash Presented & Stored Count) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- List 1 -->
+                        <div class="glass-panel rounded-xl p-0 overflow-hidden border border-slate-700/50 flex flex-col h-64">
+                            <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700 flex justify-between items-center shrink-0">
+                                <span class="text-xs font-black text-slate-400 tracking-[0.2em]">CASH PRESENTED</span>
+                                <button onclick="copyListToClipboard('cashPresentedList', this)" class="btn-copy">COPY</button>
+                            </div>
+                            <div class="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 text-center shrink-0">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">TOTAL VALUE</div>
+                                <div id="cashPresentedTotal" class="text-3xl font-mono font-black text-neon text-neon drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] tracking-tight">0</div>
+                            </div>
+                            <div class="flex-1 overflow-hidden relative bg-dark/30">
+                                <ul id="cashPresentedList" class="result-list w-full h-full overflow-y-auto p-4 text-xs font-mono text-slate-300 text-center space-y-1"></ul>
+                                <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-600 font-bold bg-dark/80 px-2 py-0.5 rounded border border-slate-700">Count: <span id="cashPresentedCount">0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- List 2 -->
+                        <div class="glass-panel rounded-xl p-0 overflow-hidden border border-slate-700/50 flex flex-col h-64">
+                            <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700 flex justify-between items-center shrink-0">
+                                <span class="text-xs font-black text-slate-400 tracking-[0.2em]">STORED COUNT</span>
+                                <button onclick="copyListToClipboard('storedCountList', this)" class="btn-copy">COPY</button>
+                            </div>
+                            <div class="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 text-center shrink-0">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">TOTAL VALUE</div>
+                                <div id="storedCountTotal" class="text-3xl font-mono font-black text-neon text-neon drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] tracking-tight">0</div>
+                            </div>
+                            <div class="flex-1 overflow-hidden relative bg-dark/30">
+                                <ul id="storedCountList" class="result-list w-full h-full overflow-y-auto p-4 text-xs font-mono text-slate-300 text-center space-y-1"></ul>
+                                <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-600 font-bold bg-dark/80 px-2 py-0.5 rounded border border-slate-700">Count: <span id="storedCountCount">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: HYOSUNG - WITH ENHANCED AI -->
+        <div id="page-hyosung" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
+            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
+            </button>
+            
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-black text-white mb-6 tracking-tight">HYOSUNG <span class="text-primary">ANALYSIS</span></h2>
+                    <button onclick="resetForm('hyosung')" class="btn-reset">CLEAR FORM</button>
+                </div>
+                
+                <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-hyosung">
+                    <div class="drop-zone-overlay rounded-xl">
+                        <span class="text-white font-bold">Lepaskan file di sini</span>
+                    </div>
+                    <textarea id="hyosungLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log Hyosung..."></textarea>
+                    <input type="file" id="file-hyosung" class="hidden" multiple accept=".txt,.log">
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Input Fisik Remaining</label>
+                        <input type="number" id="hyosungPhysInput" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="0">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
+                        <input type="number" id="hyosungAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
+                    </div>
+                    <button id="hyosungFilterButton" class="w-full md:w-auto px-12 h-14 bg-primary hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
+                        FILTER DATA
+                    </button>
+                </div>
+
+                <!-- ENHANCED AI Assistant -->
+                <div class="ai-chat-box rounded-xl p-4">
+                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
+                    <div id="ai-result-hyosung" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
+                        <div class="text-neon">🤖 AI Assistant siap!</div>
+                        <div class="mt-2 text-[10px] text-slate-400">
+                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Suggestions -->
+                    <div class="mb-3">
+                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
+                        <div class="flex flex-wrap gap-1">
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('hyosung')">Analisis Pattern Error</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('hyosung')">Prediksi Replenish</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('hyosung')">Ringkasan Jam Sibuk</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('hyosung')">Deteksi Anomali</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-input-hyosung" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
+                        <button onclick="askAI('hyosung')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-slate-500 transition-colors">
+                        <div class="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em]">ATM ID</div>
+                        <div id="hyosungAtmId" class="text-3xl font-mono font-black text-accent drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">-</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-success transition-colors box-glow-success">
+                        <div class="text-[10px] font-black text-success/70 mb-2 tracking-[0.2em]">ADD CASH</div>
+                        <div id="hyosungTotalAddCash" class="text-3xl font-mono font-black text-success drop-shadow-[0_0_5px_rgba(16,185,129,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-danger transition-colors box-glow-danger">
+                        <div class="text-[10px] font-black text-danger/70 mb-2 tracking-[0.2em]">DISPENSE</div>
+                        <div id="hyosungTotalAmount" class="text-3xl font-mono font-black text-danger drop-shadow-[0_0_5px_rgba(239,68,68,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-warning transition-colors box-glow-warning">
+                        <div class="text-[10px] font-black text-warning/70 mb-2 tracking-[0.2em]">REMAINING</div>
+                        <div id="hyosungTotalRemaining" class="text-3xl font-mono font-black text-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] break-words">0</div>
+                    </div>
+                </div>
+
+                <!-- Recon -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Fisik Remaining (Input)</div>
+                        <div id="hyosungDisplayPhys" class="text-5xl font-mono font-black text-white tracking-tight">0</div>
+                    </div>
+                    <div id="hyosungReconBox" class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center items-center transition-all duration-500">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Hasil Rekonsiliasi</div>
+                        <div id="hyosungReconResult" class="text-5xl font-mono font-black text-slate-500 tracking-tight">MENUNGGU</div>
+                        <div id="hyosungExpression" class="text-center mt-3 text-2xl font-mono font-black"></div>
+                    </div>
+                </div>
+
+                <!-- Cassettes -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <!-- C1 -->
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 1</div>
+                            <button onclick="copyListToClipboard('hyosungCash1', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="hyosungCash1" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <!-- C2 -->
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 2</div>
+                            <button onclick="copyListToClipboard('hyosungCash2', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="hyosungCash2" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <!-- C3 -->
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 3</div>
+                            <button onclick="copyListToClipboard('hyosungCash3', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="hyosungCash3" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <!-- C4 -->
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 4</div>
+                            <button onclick="copyListToClipboard('hyosungCash4', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="hyosungCash4" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: WINCOR - WITH ENHANCED AI -->
+        <div id="page-wincor" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
+            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
+            </button>
+            
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-3xl font-black text-white tracking-tight">WINCOR <span class="text-primary">ANALYSIS</span></h2>
+                        <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Mode: Bottom-Up</span>
+                    </div>
+                    <button onclick="resetForm('wincor')" class="btn-reset">CLEAR FORM</button>
+                </div>
+                
+                <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-wincor">
+                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini</span></div>
+                    <textarea id="wincorLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log Wincor..."></textarea>
+                    <input type="file" id="file-wincor" class="hidden" multiple accept=".txt,.log">
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Input Fisik Remaining</label>
+                        <input type="number" id="wincorPhysInput" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="0">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
+                        <input type="number" id="wincorAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
+                    </div>
+                    <button id="wincorFilterButton" class="w-full md:w-auto px-12 h-14 bg-primary hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
+                        FILTER DATA
+                    </button>
+                </div>
+
+                <!-- ENHANCED AI Assistant -->
+                <div class="ai-chat-box rounded-xl p-4">
+                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
+                    <div id="ai-result-wincor" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
+                        <div class="text-neon">🤖 AI Assistant siap!</div>
+                        <div class="mt-2 text-[10px] text-slate-400">
+                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Suggestions -->
+                    <div class="mb-3">
+                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
+                        <div class="flex flex-wrap gap-1">
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('wincor')">Analisis Pattern Error</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('wincor')">Prediksi Replenish</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('wincor')">Ringkasan Jam Sibuk</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('wincor')">Deteksi Anomali</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-input-wincor" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
+                        <button onclick="askAI('wincor')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-slate-500 transition-colors">
+                        <div class="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em]">ATM ID</div>
+                        <div id="wincorAtmId" class="text-3xl font-mono font-black text-accent drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">-</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-success transition-colors box-glow-success">
+                        <div class="text-[10px] font-black text-success/70 mb-2 tracking-[0.2em]">ADD CASH</div>
+                        <div id="wincorTotalAddCash" class="text-3xl font-mono font-black text-success drop-shadow-[0_0_5px_rgba(16,185,129,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-danger transition-colors box-glow-danger">
+                        <div class="text-[10px] font-black text-danger/70 mb-2 tracking-[0.2em]">DISPENSE</div>
+                        <div id="wincorTotalAmount" class="text-3xl font-mono font-black text-danger drop-shadow-[0_0_5px_rgba(239,68,68,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-warning transition-colors box-glow-warning">
+                        <div class="text-[10px] font-black text-warning/70 mb-2 tracking-[0.2em]">REMAINING</div>
+                        <div id="wincorTotalRemaining" class="text-3xl font-mono font-black text-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] break-words">0</div>
+                    </div>
+                </div>
+
+                <!-- Recon -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Fisik Remaining (Input)</div>
+                        <div id="wincorDisplayPhys" class="text-5xl font-mono font-black text-white tracking-tight">0</div>
+                    </div>
+                    <div id="wincorReconBox" class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center items-center transition-all duration-500">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Hasil Rekonsiliasi</div>
+                        <div id="wincorReconResult" class="text-5xl font-mono font-black text-slate-500 tracking-tight">MENUNGGU</div>
+                        <div id="wincorExpression" class="text-center mt-3 text-2xl font-mono font-black"></div>
+                    </div>
+                </div>
+
+                <!-- Cassettes -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 1</div>
+                            <button onclick="copyListToClipboard('wincorCash1', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="wincorCash1" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 2</div>
+                            <button onclick="copyListToClipboard('wincorCash2', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="wincorCash2" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 3</div>
+                            <button onclick="copyListToClipboard('wincorCash3', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="wincorCash3" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 4</div>
+                            <button onclick="copyListToClipboard('wincorCash4', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="wincorCash4" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: NCR - WITH ENHANCED AI -->
+        <div id="page-ncr" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
+            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
+            </button>
+            
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary" style="border-color: #8b5cf6;">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-3xl font-black text-white tracking-tight">NCR <span style="color: #8b5cf6;">ANALYSIS</span></h2>
+                        <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Auto ANSI Cleaner</span>
+                    </div>
+                    <button onclick="resetForm('ncr')" class="btn-reset">CLEAR FORM</button>
+                </div>
+                
+                <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-ncr">
+                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini</span></div>
+                    <textarea id="ncrLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono mb-6 leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log NCR..."></textarea>
+                    <input type="file" id="file-ncr" class="hidden" multiple accept=".txt,.log">
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Input Fisik Remaining</label>
+                        <input type="number" id="ncrPhysInput" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="0">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
+                        <input type="number" id="ncrAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
+                    </div>
+                    <button id="ncrFilterButton" class="w-full md:w-auto px-12 h-14 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1" style="background-color: #8b5cf6;">
+                        FILTER DATA
+                    </button>
+                </div>
+
+                <!-- ENHANCED AI Assistant -->
+                <div class="ai-chat-box rounded-xl p-4">
+                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
+                    <div id="ai-result-ncr" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
+                        <div class="text-neon">🤖 AI Assistant siap!</div>
+                        <div class="mt-2 text-[10px] text-slate-400">
+                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Suggestions -->
+                    <div class="mb-3">
+                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
+                        <div class="flex flex-wrap gap-1">
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('ncr')">Analisis Pattern Error</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('ncr')">Prediksi Replenish</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('ncr')">Ringkasan Jam Sibuk</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('ncr')">Deteksi Anomali</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-input-ncr" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
+                        <button onclick="askAI('ncr')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-slate-500 transition-colors">
+                        <div class="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em]">ATM ID</div>
+                        <div id="ncrAtmId" class="text-3xl font-mono font-black text-accent drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">-</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-success transition-colors box-glow-success">
+                        <div class="text-[10px] font-black text-success/70 mb-2 tracking-[0.2em]">ADD CASH</div>
+                        <div id="ncrTotalAddCash" class="text-3xl font-mono font-black text-success drop-shadow-[0_0_5px_rgba(16,185,129,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-danger transition-colors box-glow-danger">
+                        <div class="text-[10px] font-black text-danger/70 mb-2 tracking-[0.2em]">DISPENSE</div>
+                        <div id="ncrTotalAmount" class="text-3xl font-mono font-black text-danger drop-shadow-[0_0_5px_rgba(239,68,68,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-warning transition-colors box-glow-warning">
+                        <div class="text-[10px] font-black text-warning/70 mb-2 tracking-[0.2em]">REMAINING</div>
+                        <div id="ncrTotalRemaining" class="text-3xl font-mono font-black text-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] break-words">0</div>
+                    </div>
+                </div>
+
+                <!-- Recon -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Fisik Remaining (Input)</div>
+                        <div id="ncrDisplayPhys" class="text-5xl font-mono font-black text-white tracking-tight">0</div>
+                    </div>
+                    <div id="ncrReconBox" class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center items-center transition-all duration-500">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Hasil Rekonsiliasi</div>
+                        <div id="ncrReconResult" class="text-5xl font-mono font-black text-slate-500 tracking-tight">MENUNGGU</div>
+                        <div id="ncrExpression" class="text-center mt-3 text-2xl font-mono font-black"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 1</div>
+                            <button onclick="copyListToClipboard('ncrCash1', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="ncrCash1" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 2</div>
+                            <button onclick="copyListToClipboard('ncrCash2', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="ncrCash2" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 3</div>
+                            <button onclick="copyListToClipboard('ncrCash3', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="ncrCash3" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 4</div>
+                            <button onclick="copyListToClipboard('ncrCash4', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="ncrCash4" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: ATM JALIN - WITH ENHANCED AI -->
+        <div id="page-jalin" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
+            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+            </button>
+
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4" style="border-color: #dc2626; background: linear-gradient(135deg, rgba(127, 29, 29, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%);">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-3xl font-black text-white tracking-tight">ATM JALIN <span style="color: #fecaca;">ANALYSIS</span></h2>
+                        <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Mode: Bottom-Up</span>
+                    </div>
+                    <button onclick="resetForm('jalin')" class="btn-reset">CLEAR FORM</button>
+                </div>
+                
+                <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-jalin">
+                    <div class="drop-zone-overlay rounded-xl">
+                        <svg class="w-12 h-12 text-jalinLight mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <span class="text-white font-bold">Drop Log File Here</span>
+                    </div>
+                    <textarea id="jalinLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log ATM Jalin..."></textarea>
+                    <input type="file" id="file-jalin" class="hidden" multiple accept=".txt,.log">
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Input Fisik Remaining</label>
+                        <input type="number" id="jalinPhysInput" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="0">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
+                        <input type="number" id="jalinAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
+                    </div>
+                    <button id="jalinFilterButton" class="w-full md:w-auto px-12 h-14 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1" style="background-color: #dc2626;">
+                        FILTER DATA
+                    </button>
+                </div>
+
+                <!-- ENHANCED AI Assistant -->
+                <div class="ai-chat-box rounded-xl p-4">
+                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
+                    <div id="ai-result-jalin" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
+                        <div class="text-neon">🤖 AI Assistant siap!</div>
+                        <div class="mt-2 text-[10px] text-slate-400">
+                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Suggestions -->
+                    <div class="mb-3">
+                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
+                        <div class="flex flex-wrap gap-1">
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('jalin')">Analisis Pattern Error</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('jalin')">Prediksi Replenish</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('jalin')">Ringkasan Jam Sibuk</span>
+                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('jalin')">Deteksi Anomali</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-input-jalin" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
+                        <button onclick="askAI('jalin')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8" style="background: linear-gradient(135deg, rgba(127, 29, 29, 0.2) 0%, rgba(30, 41, 59, 0.8) 100%);">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-slate-500 transition-colors">
+                        <div class="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em]">TID</div>
+                        <div id="jalinTid" class="text-3xl font-mono font-black text-jalinAccent drop-shadow-[0_0_5px_rgba(254,202,202,0.5)]">-</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-success transition-colors box-glow-success">
+                        <div class="text-[10px] font-black text-success/70 mb-2 tracking-[0.2em]">ADD CASH</div>
+                        <div id="jalinTotalAddCash" class="text-3xl font-mono font-black text-success drop-shadow-[0_0_5px_rgba(16,185,129,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-danger transition-colors box-glow-danger">
+                        <div class="text-[10px] font-black text-danger/70 mb-2 tracking-[0.2em]">DISPENSE</div>
+                        <div id="jalinTotalAmount" class="text-3xl font-mono font-black text-danger drop-shadow-[0_0_5px_rgba(239,68,68,0.5)] break-words">0</div>
+                    </div>
+                    <div class="p-6 rounded-xl bg-slate-800/40 border border-slate-700 hover:border-warning transition-colors box-glow-warning">
+                        <div class="text-[10px] font-black text-warning/70 mb-2 tracking-[0.2em]">REMAINING</div>
+                        <div id="jalinTotalRemaining" class="text-3xl font-mono font-black text-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] break-words">0</div>
+                    </div>
+                </div>
+
+                <!-- Recon -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Fisik Remaining (Input)</div>
+                        <div id="jalinDisplayPhys" class="text-5xl font-mono font-black text-white tracking-tight">0</div>
+                    </div>
+                    <div id="jalinReconBox" class="p-8 rounded-2xl bg-slate-800/60 border border-slate-600 flex flex-col justify-center items-center transition-all duration-500">
+                        <div class="text-xs font-black font-mono text-slate-400 mb-2 tracking-widest uppercase">Hasil Rekonsiliasi</div>
+                        <div id="jalinReconResult" class="text-5xl font-mono font-black text-slate-500 tracking-tight">MENUNGGU</div>
+                        <div id="jalinExpression" class="text-center mt-3 text-2xl font-mono font-black"></div>
+                    </div>
+                </div>
+
+                <!-- Cassettes -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 1</div>
+                            <button onclick="copyListToClipboard('jalinCash1', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="jalinCash1" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 2</div>
+                            <button onclick="copyListToClipboard('jalinCash2', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="jalinCash2" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 3</div>
+                            <button onclick="copyListToClipboard('jalinCash3', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="jalinCash3" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                    <div class="border border-slate-700 rounded-xl bg-dark/30 p-6 text-center group hover:border-slate-500 transition-colors">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                            <div class="text-[10px] font-black text-slate-500 tracking-widest">CASSETTE 4</div>
+                            <button onclick="copyListToClipboard('jalinCash4', this)" class="btn-copy">COPY</button>
+                        </div>
+                        <ul id="jalinCash4" class="result-list h-24 w-full overflow-y-auto text-slate-300 text-sm font-mono"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER - ENHANCED -->
+    <footer class="p-10 border-t-2 border-slate-700/50 text-center flex flex-col md:flex-row justify-between items-center w-full gap-6 relative z-10 bg-slate-900/80 mt-20">
+        <div class="signature-text">CREATED BY HERY</div>
+        <div class="px-10 py-5 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xl font-black tracking-[0.5em] uppercase shadow-[0_0_30px_rgba(0,0,0,0.5)]">MANAGERIAL USE ONLY</div>
+    </footer>
+
+    <!-- Custom JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
