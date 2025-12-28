@@ -8,15 +8,26 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <title>REKONSILIATOR - Command Center v4.1 (Secure & Smart AI)</title>
+    <title>REKONSILIATOR - Command Center v4.2 (Enhanced Period Filter)</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;800&family=Mr+Dafoe&display=swap" rel="stylesheet">
 
+    <!-- ExcelJS & FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- JSZip untuk membaca file ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    
     <script>
         tailwind.config = {
             theme: {
@@ -61,12 +72,9 @@
             }
         }
     </script>
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased selection:bg-primary selection:text-white login-gate-active">
-
+    
     <!-- LOGIN GATE (SECURITY) - ENHANCED -->
     <div id="login-gate" class="fixed inset-0 z-[100] bg-[#050914] flex items-center justify-center">
         <div class="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
@@ -229,25 +237,66 @@
                         <h3 class="user-guide-title">USER GUIDE</h3>
                         <ol class="user-guide-list">
                             <li>Copy Paste/drop file EJ Log sesuai periode hari replenish tanpa di potong</li>
+                            <li><strong>File yang didukung:</strong> .txt, .log, .zip</li>
                             <li>Jika pada file EJ Log terdapat lebih dari satu periode maka App otomatis menganalisis periode terakhir</li>
                             <li>Input data fisik remaining sesuai dengan hasil hitung fisik petugas CPC</li>
                             <li>Jika terdapat kaset defect yang tidak terbaca pada saat replenish maka input manual jumlah total pagu replenish</li>
-                            <li>Click filter data</li>
-                            <li>Jika terjadi error atau hasil acak, potong EJ sesuai Periode replenish</li>
-                            <li>Aplikasi ini untuk membantu mempercepat penyelesaian tugas dan bukan untuk pengambilan keputusan, seluruh nilai yang di inut pada laporan akhir sepenuhnya di pertanggung jawabkan oleh managerial onduty atau terkait</li>
+                            <li>Click Analisis</li>
+                            <li>Pilih periode replenish yang di butuhkan dalam proses rekonsiliasi</li>
                         </ol>
                     </div>
                 </div>
+            </div>
+
+            <!-- DEVELOPER STATEMENT BOX -->
+            <div class="developer-statement mt-12">
+                <h4 class="developer-statement-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h1m0 0h-1m1 0v4m-3-6h.01M12 8h.01M9 8h.01M7 16h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    PERHATIAN
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h1m0 0h-1m1 0v4m-3-6h.01M12 8h.01M9 8h.01M7 16h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </h4>
+                <p class="developer-statement-content">
+                    Aplikasi ini merupakan alat bantu teknis untuk mempercepat proses rekonsiliasi berbasis EJ Log. 
+                    Seluruh output numerik dan data hasil analisis wajib diverifikasi dan divalidasi ulang sebelum digunakan dalam pelaporan resmi. 
+                    Akurasi final, pengambilan keputusan, serta pertanggungjawaban hukum sepenuhnya berada di bawah tanggung jawab 
+                    pihak managerial dan otoritas terkait yang berwenang.
+                </p>
             </div>
         </div>
 
         <!-- ================= SUB PAGES ================= -->
 
-        <!-- PAGE: CRM HITACHI - WITH ENHANCED AI -->
+        <!-- PAGE: CRM HITACHI -->
         <div id="page-crm" class="page-section hidden w-full max-w-[95vw] mx-auto fade-enter">
-            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
-            </button>
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+            
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-6">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - CRM HITACHI</span>
+                </div>
+                <div id="crmPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+                
+                <div id="crmPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="crmSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
@@ -261,17 +310,20 @@
                                 MACHINE: <span class="text-white">WAITING LOG...</span>
                             </div>
                         </div>
-                        <button onclick="resetForm('crm')" class="btn-reset">CLEAR FORM</button>
+                        <div class="flex">
+                            <button onclick="resetForm('crm')" class="btn-reset">CLEAR FORM</button>
+                        </div>
                     </div>
                     
                     <!-- Dropzone -->
                     <div class="drop-zone rounded-xl h-64 relative" id="dropzone-crm">
                         <div class="drop-zone-overlay rounded-xl">
                             <svg class="w-12 h-12 text-warning mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                            <span class="text-white font-bold text-sm">Drop Log File Here</span>
+                            <span class="text-white font-bold text-sm">Drop Log File Here (.txt/.log/.zip)</span>
+                            <span class="text-slate-400 text-xs mt-2">Or click to select files</span>
                         </div>
-                        <textarea id="crmLogInput" class="glass-input w-full h-full rounded-xl p-4 text-[10px] font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log (.txt/.log) di sini..."></textarea>
-                        <input type="file" id="file-crm" class="hidden" multiple accept=".txt,.log">
+                        <textarea id="crmLogInput" class="glass-input w-full h-full rounded-xl p-4 text-[10px] font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log (.txt/.log/.zip) di sini..."></textarea>
+                        <input type="file" id="file-crm" class="hidden" multiple accept=".txt,.log,.zip">
                     </div>
 
                     <!-- Input Fisik -->
@@ -292,37 +344,10 @@
                         </div>
                     </div>
 
+                    <!-- TOMBOL DIUBAH: JALANKAN ANALISA → ANALISIS -->
                     <button id="crmFilterButton" class="w-full py-4 bg-warning hover:bg-amber-400 text-black font-black text-xl rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
-                        JALANKAN ANALISA
+                        ANALISIS
                     </button>
-
-                    <!-- ENHANCED AI Assistant -->
-                    <div class="ai-chat-box rounded-xl p-4 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 p-2 opacity-10"><svg class="w-16 h-16 text-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg></div>
-                        <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest"><span class="w-1.5 h-1.5 bg-purple rounded-full animate-pulse"></span> ENHANCED AI ANALYTIC</h4>
-                        <div id="ai-result-crm" class="ai-response-box mb-3 text-[11px] font-mono text-slate-300 leading-relaxed">
-                            <div class="text-neon">🤖 AI Assistant siap!</div>
-                            <div class="mt-2 text-[10px] text-slate-400">
-                                <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
-                            </div>
-                        </div>
-                        
-                        <!-- AI Suggestions -->
-                        <div class="mb-3">
-                            <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
-                            <div class="flex flex-wrap gap-1">
-                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('crm')">Analisis Pattern Error</span>
-                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('crm')">Prediksi Replenish</span>
-                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('crm')">Ringkasan Jam Sibuk</span>
-                                <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-crm').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('crm')">Deteksi Anomali</span>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <input type="text" id="ai-input-crm" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
-                            <button onclick="askAI('crm')" class="bg-purple hover:bg-violet-600 text-white px-3 py-2 rounded text-xs font-bold tracking-wider">ANALYZE</button>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Right Panel (Results) - Width: 9/12 -->
@@ -332,7 +357,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
                         <!-- Init -->
                         <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-slate-700 hover:border-slate-500 transition-colors overflow-hidden group">
-                            <div class="text-[10px] font-black font-mono text-slate-500 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-slate-300 transition-colors">INITIALIZE</div>
+                            <div class="text-[10px] font-black font-mono text-slate-500 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-slate-300 transition-colors">REPLENISH</div>
                             <div id="initAmount" class="text-2xl lg:text-3xl font-mono font-black text-white whitespace-nowrap drop-shadow-md">0</div>
                         </div>
                         <!-- Disp -->
@@ -377,7 +402,7 @@
                             </thead>
                             <tbody class="font-mono text-slate-200 divide-y divide-slate-700/30 text-sm">
                                 <tr class="hover:bg-white/5 transition-colors">
-                                    <td class="px-8 py-4 font-bold text-slate-400 tracking-wide">INITIALIZE</td>
+                                    <td class="px-8 py-4 font-bold text-slate-400 tracking-wide">REPLENISH</td>
                                     <td id="init100" class="px-8 py-4 text-center font-bold text-lg">0</td>
                                     <td id="init50" class="px-8 py-4 text-center font-bold text-lg">0</td>
                                 </tr>
@@ -444,24 +469,48 @@
             </div>
         </div>
 
-        <!-- PAGE: HYOSUNG - WITH ENHANCED AI -->
+        <!-- PAGE: HYOSUNG -->
         <div id="page-hyosung" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
-            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
-            </button>
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+            
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-2">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - HYOSUNG</span>
+                </div>
+                <div id="hyosungPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+                
+                <div id="hyosungPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="hyosungSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
             
             <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary">
                 <div class="flex justify-between items-start mb-6">
                     <h2 class="text-3xl font-black text-white mb-6 tracking-tight">HYOSUNG <span class="text-primary">ANALYSIS</span></h2>
-                    <button onclick="resetForm('hyosung')" class="btn-reset">CLEAR FORM</button>
+                    <div class="flex">
+                        <button onclick="resetForm('hyosung')" class="btn-reset">CLEAR FORM</button>
+                    </div>
                 </div>
                 
                 <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-hyosung">
                     <div class="drop-zone-overlay rounded-xl">
-                        <span class="text-white font-bold">Lepaskan file di sini</span>
+                        <span class="text-white font-bold">Lepaskan file di sini (.txt/.log/.zip)</span>
                     </div>
-                    <textarea id="hyosungLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log Hyosung..."></textarea>
-                    <input type="file" id="file-hyosung" class="hidden" multiple accept=".txt,.log">
+                    <textarea id="hyosungLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Hyosung..."></textarea>
+                    <input type="file" id="file-hyosung" class="hidden" multiple accept=".txt,.log,.zip">
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
@@ -473,36 +522,10 @@
                         <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
                         <input type="number" id="hyosungAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
                     </div>
+                    <!-- TOMBOL DIUBAH: FILTER DATA → ANALISIS -->
                     <button id="hyosungFilterButton" class="w-full md:w-auto px-12 h-14 bg-primary hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
-                        FILTER DATA
+                        ANALISIS
                     </button>
-                </div>
-
-                <!-- ENHANCED AI Assistant -->
-                <div class="ai-chat-box rounded-xl p-4">
-                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
-                    <div id="ai-result-hyosung" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
-                        <div class="text-neon">🤖 AI Assistant siap!</div>
-                        <div class="mt-2 text-[10px] text-slate-400">
-                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
-                        </div>
-                    </div>
-                    
-                    <!-- AI Suggestions -->
-                    <div class="mb-3">
-                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
-                        <div class="flex flex-wrap gap-1">
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('hyosung')">Analisis Pattern Error</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('hyosung')">Prediksi Replenish</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('hyosung')">Ringkasan Jam Sibuk</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-hyosung').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('hyosung')">Deteksi Anomali</span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <input type="text" id="ai-input-hyosung" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
-                        <button onclick="askAI('hyosung')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
-                    </div>
                 </div>
             </div>
 
@@ -578,11 +601,33 @@
             </div>
         </div>
 
-        <!-- PAGE: WINCOR - WITH ENHANCED AI -->
+        <!-- PAGE: WINCOR -->
         <div id="page-wincor" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
-            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
-            </button>
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+            
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-2">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - WINCOR</span>
+                </div>
+                <div id="wincorPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+                
+                <div id="wincorPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="wincorSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
             
             <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary">
                 <div class="flex justify-between items-start mb-6">
@@ -590,13 +635,15 @@
                         <h2 class="text-3xl font-black text-white tracking-tight">WINCOR <span class="text-primary">ANALYSIS</span></h2>
                         <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Mode: Bottom-Up</span>
                     </div>
-                    <button onclick="resetForm('wincor')" class="btn-reset">CLEAR FORM</button>
+                    <div class="flex">
+                        <button onclick="resetForm('wincor')" class="btn-reset">CLEAR FORM</button>
+                    </div>
                 </div>
                 
                 <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-wincor">
-                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini</span></div>
+                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini (.txt/.log/.zip)</span></div>
                     <textarea id="wincorLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log Wincor..."></textarea>
-                    <input type="file" id="file-wincor" class="hidden" multiple accept=".txt,.log">
+                    <input type="file" id="file-wincor" class="hidden" multiple accept=".txt,.log,.zip">
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
@@ -608,36 +655,10 @@
                         <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
                         <input type="number" id="wincorAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
                     </div>
+                    <!-- TOMBOL DIUBAH: FILTER DATA → ANALISIS -->
                     <button id="wincorFilterButton" class="w-full md:w-auto px-12 h-14 bg-primary hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
-                        FILTER DATA
+                        ANALISIS
                     </button>
-                </div>
-
-                <!-- ENHANCED AI Assistant -->
-                <div class="ai-chat-box rounded-xl p-4">
-                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
-                    <div id="ai-result-wincor" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
-                        <div class="text-neon">🤖 AI Assistant siap!</div>
-                        <div class="mt-2 text-[10px] text-slate-400">
-                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
-                        </div>
-                    </div>
-                    
-                    <!-- AI Suggestions -->
-                    <div class="mb-3">
-                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
-                        <div class="flex flex-wrap gap-1">
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('wincor')">Analisis Pattern Error</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('wincor')">Prediksi Replenish</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('wincor')">Ringkasan Jam Sibuk</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-wincor').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('wincor')">Deteksi Anomali</span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <input type="text" id="ai-input-wincor" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
-                        <button onclick="askAI('wincor')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
-                    </div>
                 </div>
             </div>
 
@@ -709,11 +730,33 @@
             </div>
         </div>
 
-        <!-- PAGE: NCR - WITH ENHANCED AI -->
+        <!-- PAGE: NCR -->
         <div id="page-ncr" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
-            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">DASHBOARD</span>
-            </button>
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+            
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-2">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - NCR</span>
+                </div>
+                <div id="ncrPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+                
+                <div id="ncrPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="ncrSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
             
             <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4 border-t-primary" style="border-color: #8b5cf6;">
                 <div class="flex justify-between items-start mb-6">
@@ -721,13 +764,15 @@
                         <h2 class="text-3xl font-black text-white tracking-tight">NCR <span style="color: #8b5cf6;">ANALYSIS</span></h2>
                         <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Auto ANSI Cleaner</span>
                     </div>
-                    <button onclick="resetForm('ncr')" class="btn-reset">CLEAR FORM</button>
+                    <div class="flex">
+                        <button onclick="resetForm('ncr')" class="btn-reset">CLEAR FORM</button>
+                    </div>
                 </div>
                 
                 <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-ncr">
-                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini</span></div>
+                    <div class="drop-zone-overlay rounded-xl"><span class="text-white font-bold">Lepaskan file di sini (.txt/.log/.zip)</span></div>
                     <textarea id="ncrLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono mb-6 leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log NCR..."></textarea>
-                    <input type="file" id="file-ncr" class="hidden" multiple accept=".txt,.log">
+                    <input type="file" id="file-ncr" class="hidden" multiple accept=".txt,.log,.zip">
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
@@ -739,36 +784,10 @@
                         <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
                         <input type="number" id="ncrAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
                     </div>
+                    <!-- TOMBOL DIUBAH: FILTER DATA → ANALISIS -->
                     <button id="ncrFilterButton" class="w-full md:w-auto px-12 h-14 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1" style="background-color: #8b5cf6;">
-                        FILTER DATA
+                        ANALISIS
                     </button>
-                </div>
-
-                <!-- ENHANCED AI Assistant -->
-                <div class="ai-chat-box rounded-xl p-4">
-                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
-                    <div id="ai-result-ncr" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
-                        <div class="text-neon">🤖 AI Assistant siap!</div>
-                        <div class="mt-2 text-[10px] text-slate-400">
-                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
-                        </div>
-                    </div>
-                    
-                    <!-- AI Suggestions -->
-                    <div class="mb-3">
-                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
-                        <div class="flex flex-wrap gap-1">
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('ncr')">Analisis Pattern Error</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('ncr')">Prediksi Replenish</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('ncr')">Ringkasan Jam Sibuk</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-ncr').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('ncr')">Deteksi Anomali</span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <input type="text" id="ai-input-ncr" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
-                        <button onclick="askAI('ncr')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
-                    </div>
                 </div>
             </div>
 
@@ -839,11 +858,33 @@
             </div>
         </div>
 
-        <!-- PAGE: ATM JALIN - WITH ENHANCED AI -->
+        <!-- PAGE: ATM JALIN -->
         <div id="page-jalin" class="page-section hidden w-full max-w-6xl mx-auto fade-enter">
-            <button onclick="navigateTo('page-dashboard')" class="mb-8 px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
-            </button>
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+            
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-6">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - ATM JALIN</span>
+                </div>
+                <div id="jalinPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+                
+                <div id="jalinPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="jalinSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
 
             <div class="glass-panel rounded-2xl p-8 mb-8 border-t-4" style="border-color: #dc2626; background: linear-gradient(135deg, rgba(127, 29, 29, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%);">
                 <div class="flex justify-between items-start mb-6">
@@ -851,16 +892,18 @@
                         <h2 class="text-3xl font-black text-white tracking-tight">ATM JALIN <span style="color: #fecaca;">ANALYSIS</span></h2>
                         <span class="text-[10px] px-3 py-1 bg-slate-800 border border-slate-600 rounded text-slate-400 font-black tracking-widest uppercase">Mode: Bottom-Up</span>
                     </div>
-                    <button onclick="resetForm('jalin')" class="btn-reset">CLEAR FORM</button>
+                    <div class="flex">
+                        <button onclick="resetForm('jalin')" class="btn-reset">CLEAR FORM</button>
+                    </div>
                 </div>
                 
                 <div class="drop-zone rounded-xl h-48 mb-6 relative" id="dropzone-jalin">
                     <div class="drop-zone-overlay rounded-xl">
                         <svg class="w-12 h-12 text-jalinLight mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        <span class="text-white font-bold">Drop Log File Here</span>
+                        <span class="text-white font-bold">Drop Log File Here (.txt/.log/.zip)</span>
                     </div>
                     <textarea id="jalinLogInput" class="glass-input w-full h-full rounded-xl p-4 text-xs font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Paste Log ATM Jalin..."></textarea>
-                    <input type="file" id="file-jalin" class="hidden" multiple accept=".txt,.log">
+                    <input type="file" id="file-jalin" class="hidden" multiple accept=".txt,.log,.zip">
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-6 mb-6 items-end">
@@ -872,36 +915,10 @@
                         <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">Add Cash Manual (Optional)</label>
                         <input type="number" id="jalinAddCashManual" class="glass-input w-full h-14 px-6 rounded-xl text-2xl font-bold text-white placeholder-slate-700" placeholder="Auto from log">
                     </div>
+                    <!-- TOMBOL DIUBAH: FILTER DATA → ANALISIS -->
                     <button id="jalinFilterButton" class="w-full md:w-auto px-12 h-14 text-white font-black text-lg rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] transition-all uppercase tracking-widest transform hover:-translate-y-1" style="background-color: #dc2626;">
-                        FILTER DATA
+                        ANALISIS
                     </button>
-                </div>
-
-                <!-- ENHANCED AI Assistant -->
-                <div class="ai-chat-box rounded-xl p-4">
-                    <h4 class="text-purple font-bold text-xs mb-2 flex items-center gap-2 tracking-widest uppercase">ENHANCED AI ANALYTIC</h4>
-                    <div id="ai-result-jalin" class="ai-response-box mb-3 text-xs font-mono text-slate-300">
-                        <div class="text-neon">🤖 AI Assistant siap!</div>
-                        <div class="mt-2 text-[10px] text-slate-400">
-                            <strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong>
-                        </div>
-                    </div>
-                    
-                    <!-- AI Suggestions -->
-                    <div class="mb-3">
-                        <div class="text-[10px] text-slate-500 mb-2 font-bold">CONTOH PERTANYAAN:</div>
-                        <div class="flex flex-wrap gap-1">
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Analisis pattern error hari ini dan bandingkan dengan kemarin'; askAI('jalin')">Analisis Pattern Error</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Prediksi kapan perlu replenish berdasarkan trend dispense'; askAI('jalin')">Prediksi Replenish</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Buat ringkasan transaksi jam sibuk dan sarankan visualisasi'; askAI('jalin')">Ringkasan Jam Sibuk</span>
-                            <span class="ai-suggestion-chip" onclick="document.getElementById('ai-input-jalin').value='Deteksi anomaly dalam transaksi 3 hari terakhir'; askAI('jalin')">Deteksi Anomali</span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <input type="text" id="ai-input-jalin" class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white focus:border-purple outline-none font-mono" placeholder="Ketik pertanyaan analitis...">
-                        <button onclick="askAI('jalin')" class="bg-purple hover:bg-violet-600 text-white px-4 py-2 rounded text-xs font-bold">ANALYZE</button>
-                    </div>
                 </div>
             </div>
 
@@ -981,7 +998,7 @@
         <div class="px-10 py-5 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xl font-black tracking-[0.5em] uppercase shadow-[0_0_30px_rgba(0,0,0,0.5)]">MANAGERIAL USE ONLY</div>
     </footer>
 
-    <!-- Custom JavaScript -->
-    <script src="script.js"></script>
+    <!-- JavaScript File -->
+    <script src="script.js" defer></script>
 </body>
 </html>
