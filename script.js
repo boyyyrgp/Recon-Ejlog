@@ -1,17 +1,13 @@
-// --- AI ENHANCEMENTS: GLOBAL STATE ---
-let aiContext = {
-    lastQuestion: '',
-    lastResponse: '',
-    machineType: '',
-    logCharacteristics: {},
-    conversationHistory: []
-};
-
-let userPatterns = {
-    frequentQueries: [],
-    commonErrors: [],
-    preferredMetrics: []
-};
+// Global variables to store period data
+let dataFilterCRMHitachi;
+let hyosungPeriods = [];
+let currentHyosungPeriod = null;
+let ncrPeriods = [];
+let currentNcrPeriod = null;
+let wincorPeriods = [];
+let currentWincorPeriod = null;
+let jalinPeriods = [];
+let currentJalinPeriod = null;
 
 // --- LOGIN GATE SYSTEM ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,16 +43,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Inisialisasi Modul CRM Hitachi & Lainnya ---
-    new DataFilterCRMHitachi(); 
-    setupDragAndDrop('dropzone-crm', 'file-crm', 'crmLogInput');
-    setupDragAndDrop('dropzone-wincor', 'file-wincor', 'wincorLogInput');
-    setupDragAndDrop('dropzone-hyosung', 'file-hyosung', 'hyosungLogInput');
-    setupDragAndDrop('dropzone-ncr', 'file-ncr', 'ncrLogInput');
-    setupDragAndDrop('dropzone-jalin', 'file-jalin', 'jalinLogInput');
+    dataFilterCRMHitachi = new DataFilterCRMHitachi(); 
+    
+    // Setup untuk semua mesin
+    ['crm', 'wincor', 'hyosung', 'ncr', 'jalin'].forEach(machine => {
+        setupDragAndDrop(`dropzone-${machine}`, `file-${machine}`, `${machine}LogInput`);
+        
+        // Setup input file click via dropzone
+        const dropzone = document.getElementById(`dropzone-${machine}`);
+        const fileInput = document.getElementById(`file-${machine}`);
+        
+        if (dropzone && fileInput) {
+            dropzone.addEventListener('click', () => {
+                fileInput.click();
+            });
+        }
+    });
 
     // Event Listeners Filter
     const wincorBtn = document.getElementById('wincorFilterButton');
-    if(wincorBtn) wincorBtn.addEventListener('click', filterCash);
+    if(wincorBtn) wincorBtn.addEventListener('click', filterWincor);
 
     const hyosungBtn = document.getElementById('hyosungFilterButton');
     if(hyosungBtn) hyosungBtn.addEventListener('click', filterHyosung);
@@ -66,19 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const jalinBtn = document.getElementById('jalinFilterButton');
     if(jalinBtn) jalinBtn.addEventListener('click', filterJalin);
-
-    // Load user patterns
-    loadUserPatterns();
 });
 
 // --- UTILITY FUNCTIONS ---
 function cleanAnsiCodes(str) {
     const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]|\u0000/g;
     return str.replace(ansiRegex, '');
-}
-
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
 }
 
 // --- RESET FUNCTIONALITY ---
@@ -101,12 +100,6 @@ function resetForm(type) {
     // Reset input add cash manual
     const addCashManual = document.getElementById(`${type}AddCashManual`);
     if (addCashManual) addCashManual.value = '';
-
-    // Reset AI input
-    const aiInput = document.getElementById(`ai-input-${type}`);
-    if (aiInput) aiInput.value = '';
-    const aiResult = document.getElementById(`ai-result-${type}`);
-    if (aiResult) aiResult.innerHTML = '<div class="text-neon">🤖 AI Assistant siap!</div><div class="mt-2 text-[10px] text-slate-400"><strong>Klik contoh pertanyaan di bawah atau ketik permintaan khusus:</strong></div>';
 
     // Untuk CRM, reset machine display
     if (type === 'crm') {
@@ -140,15 +133,84 @@ function resetForm(type) {
         }
     }
 
+    // Reset periode display untuk semua mesin
+    const periodDisplay = document.getElementById(`${type}PeriodDisplay`);
+    if (periodDisplay) {
+        periodDisplay.innerHTML = '';
+        periodDisplay.classList.add('hidden');
+    }
+    
+    // Reset selected period untuk semua mesin
+    const periodSelected = document.getElementById(`${type}PeriodSelected`);
+    if (periodSelected) periodSelected.classList.add('hidden');
+
+    // Reset variabel periode global
+    if (type === 'hyosung') {
+        hyosungPeriods = [];
+        currentHyosungPeriod = null;
+    } else if (type === 'ncr') {
+        ncrPeriods = [];
+        currentNcrPeriod = null;
+    } else if (type === 'wincor') {
+        wincorPeriods = [];
+        currentWincorPeriod = null;
+    } else if (type === 'jalin') {
+        jalinPeriods = [];
+        currentJalinPeriod = null;
+    }
+
     alert('Form has been reset!');
 }
 
-// --- COPY FUNCTIONALITY ---
+// --- UPGRADED COPY FUNCTIONALITY ---
 function copyListToClipboard(listId, btnElement) {
     const list = document.getElementById(listId);
     if (!list) return;
     
-    const items = Array.from(list.querySelectorAll('li')).map(li => li.textContent).join('\n');
+    let items = '';
+    
+    // Filter khusus untuk CRM (Cash Presented & Stored Count)
+    if (listId === 'cashPresentedList' || listId === 'storedCountList') {
+        const listItems = Array.from(list.querySelectorAll('li'));
+        items = listItems.map(li => {
+            // Ambil teks dan hapus pemisah ribuan untuk Excel
+            let text = li.textContent.trim();
+            // Hapus titik pemisah ribuan agar terbaca benar di Excel
+            text = text.replace(/\./g, '');
+            // Hapus koma jika ada (untuk angka desimal, meski tidak ada di kasus ini)
+            text = text.replace(/,/g, '');
+            return text;
+        }).filter(text => text !== '').join('\n');
+    }
+    // Filter untuk cassette ATM (Hyosung, Wincor, NCR, Jalin)
+    else if (listId.includes('Cash') || listId.includes('cassette')) {
+        const listItems = Array.from(list.querySelectorAll('li'));
+        items = listItems
+            .filter(li => {
+                // Hapus baris yang mengandung "Total:" atau "Total :"
+                const text = li.textContent.trim();
+                return !text.includes('Total:') && !text.includes('Total :');
+            })
+            .map(li => {
+                let text = li.textContent.trim();
+                // Hapus nilai 0 atau negatif
+                if (text === '0' || text === '-0' || text.startsWith('-')) {
+                    return '';
+                }
+                // Hapus pemisah ribuan untuk konsistensi
+                text = text.replace(/\./g, '');
+                return text;
+            })
+            .filter(text => text !== '' && text !== '0' && !text.startsWith('-'))
+            .join('\n');
+    }
+    // Default untuk list lainnya
+    else {
+        items = Array.from(list.querySelectorAll('li'))
+            .map(li => li.textContent.trim())
+            .filter(text => text !== '')
+            .join('\n');
+    }
     
     if (!items) {
         const originalText = btnElement.textContent;
@@ -200,19 +262,13 @@ function navigateTo(targetId) {
     }
 }
 
-// --- 1. DRAG & DROP LOGIC ---
+// --- DRAG & DROP LOGIC ---
 function setupDragAndDrop(dropzoneId, inputId, textareaId) {
     const dropzone = document.getElementById(dropzoneId);
     const fileInput = document.getElementById(inputId);
     const textarea = document.getElementById(textareaId);
 
     if(!dropzone) return;
-
-    dropzone.addEventListener('click', (e) => {
-        if (e.target !== textarea) {
-            fileInput.click();
-        }
-    });
 
     fileInput.addEventListener('change', (e) => {
         handleFiles(e.target.files, textarea);
@@ -238,496 +294,141 @@ function setupDragAndDrop(dropzoneId, inputId, textareaId) {
     dropzone.addEventListener('drop', (e) => {
         const dt = e.dataTransfer;
         const files = dt.files;
-        handleFiles(files, textarea);
+        
+        if (files.length > 0) {
+            handleFiles(files, textarea);
+        }
     }, false);
 }
 
-function handleFiles(files, textarea) {
+// === UPGRADED: Fungsi untuk membaca file ZIP TANPA BATASAN ===
+async function extractZipContents(file) {
+    try {
+        const zip = await JSZip.loadAsync(file);
+        let extractedText = "";
+        let logCount = 0;
+        let fileList = [];
+        
+        // Prioritaskan file .txt, .log, .csv
+        const textFiles = [];
+        const otherFiles = [];
+        
+        for (const [filename, fileEntry] of Object.entries(zip.files)) {
+            if (!fileEntry.dir) {
+                if (filename.toLowerCase().endsWith('.txt') || 
+                    filename.toLowerCase().endsWith('.log') ||
+                    filename.toLowerCase().endsWith('.csv')) {
+                    textFiles.push({filename, fileEntry});
+                } else {
+                    otherFiles.push({filename, fileEntry});
+                }
+            }
+        }
+        
+        // Gabungkan dengan prioritas file teks
+        const allFiles = [...textFiles, ...otherFiles];
+        
+        for (const {filename, fileEntry} of allFiles) {
+            try {
+                // Coba baca sebagai teks
+                const content = await fileEntry.async('text');
+                extractedText += `=== File: ${filename} ===\n${content}\n\n`;
+                fileList.push(filename);
+                logCount++;
+                
+                // Batasi hanya jika ukuran text terlalu besar (10MB)
+                if (extractedText.length > 10000000) { // ~10MB
+                    extractedText += `\n[NOTE: Ukuran konten ZIP terlalu besar, hanya menampilkan sebagian]\n`;
+                    break;
+                }
+            } catch (error) {
+                console.warn(`Gagal membaca file ${filename}:`, error);
+                extractedText += `=== File: ${filename} ===\n[TIPE FILE NON-TEKS, DILEWATI]\n\n`;
+            }
+        }
+        
+        if (logCount > 0) {
+            return {
+                success: true,
+                text: `[${logCount} file ditemukan dalam ZIP: ${fileList.length} file total]\n\n${extractedText}`,
+                count: logCount
+            };
+        } else {
+            return {
+                success: false,
+                text: "[ZIP tidak mengandung file teks yang bisa dibaca]",
+                count: 0
+            };
+        }
+    } catch (error) {
+        console.error('Error reading ZIP:', error);
+        return {
+            success: false,
+            text: `[ERROR: Gagal membaca file ZIP. Detail: ${error.message}]`,
+            count: 0
+        };
+    }
+}
+
+// Fungsi untuk membaca semua jenis file
+async function handleFiles(files, textarea) {
+    if (!files || files.length === 0) return;
+    
     textarea.value = "Membaca file...";
     const readers = [];
     let combinedText = "";
-
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        const promise = new Promise((resolve) => {
-            reader.onload = (e) => resolve(e.target.result);
+    let totalFiles = 0;
+    
+    for (const file of files) {
+        const promise = new Promise(async (resolve) => {
+            try {
+                if (file.name.toLowerCase().endsWith('.zip')) {
+                    const result = await extractZipContents(file);
+                    totalFiles += result.count;
+                    resolve(result.text);
+                } else if (file.type === 'text/plain' || 
+                         file.name.toLowerCase().endsWith('.txt') || 
+                         file.name.toLowerCase().endsWith('.log') ||
+                         file.name.toLowerCase().endsWith('.csv')) {
+                    // Baca file teks biasa
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        totalFiles++;
+                        resolve(e.target.result);
+                    };
+                    reader.onerror = () => resolve(`Error membaca file ${file.name}`);
+                    reader.readAsText(file, 'UTF-8');
+                } else {
+                    // Coba baca sebagai teks meskipun bukan .txt/.log
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        totalFiles++;
+                        resolve(`[File: ${file.name}]\n${e.target.result}\n`);
+                    };
+                    reader.onerror = () => {
+                        resolve(`[File: ${file.name} - Bukan file teks, dilewati]`);
+                    };
+                    reader.readAsText(file);
+                }
+            } catch (error) {
+                resolve(`Error membaca file ${file.name}: ${error.message}`);
+            }
         });
         readers.push(promise);
-        reader.readAsText(file);
-    });
+    }
 
     Promise.all(readers).then(contents => {
-        combinedText = contents.join("\n\n--- MERGED FILE ---\n\n");
+        if (files.length > 1) {
+            combinedText = `[${files.length} FILE]\n\n` + contents.join("\n\n---\n\n");
+        } else {
+            combinedText = contents[0];
+        }
+        
         textarea.value = combinedText;
     });
 }
 
-// --- ENHANCED AI ASSISTANT LOGIC ---
-function askAI(type) {
-    const inputId = `ai-input-${type}`;
-    const resultId = `ai-result-${type}`;
-    const logInputId = type === 'crm' ? 'crmLogInput' : `${type}LogInput`;
-    
-    const question = document.getElementById(inputId).value.trim();
-    const logContent = document.getElementById(logInputId).value;
-    const resultDiv = document.getElementById(resultId);
-
-    if (!question) return;
-
-    resultDiv.innerHTML = '<span class="ai-typing text-neon">Sedang menganalisis</span>';
-    
-    // Update context
-    aiContext.machineType = type;
-    aiContext.lastQuestion = question;
-    
-    setTimeout(() => {
-        const analysis = enhancedAIAnalysis(question, logContent, type);
-        resultDiv.innerHTML = analysis;
-        
-        // Update context dengan response
-        aiContext.lastResponse = analysis;
-        aiContext.conversationHistory.push({
-            question,
-            response: analysis,
-            timestamp: Date.now()
-        });
-        
-        // Learning (sederhana)
-        learnFromInteraction(question, analysis, true);
-    }, 800);
-}
-
-function enhancedAIAnalysis(question, logContent, type) {
-    const cleanLog = cleanAnsiCodes(logContent || "");
-    if (!cleanLog || cleanLog.length < 50) {
-        return formatAIResponse("Log kosong atau terlalu pendek. Harap upload log terlebih dahulu.", "error");
-    }
-
-    // NLP Dasar: Normalisasi pertanyaan
-    const normalizedQ = question.toLowerCase().trim();
-    
-    // Context-aware: Jika pertanyaan mengacu pada konteks sebelumnya
-    if (isFollowUpQuestion(normalizedQ)) {
-        return handleFollowUpQuestion(normalizedQ, cleanLog, type);
-    }
-
-    // Pattern Recognition & Anomaly Detection
-    const anomalies = detectAnomalies(cleanLog, type);
-    const insights = generateProactiveInsights(cleanLog, type);
-
-    // Multi-step Queries
-    if (isComplexQuery(normalizedQ)) {
-        return handleComplexQuery(normalizedQ, cleanLog, type);
-    }
-
-    // Smart Suggestions berdasarkan analisis log
-    let smartSuggestions = generateSmartSuggestions(cleanLog, type);
-
-    // Coba tangani dengan logika lama terlebih dahulu
-    const legacyAnalysis = generateAIAnalysis(question, logContent, type);
-    if (legacyAnalysis && !legacyAnalysis.includes("AI Siap")) {
-        return formatAIResponse(legacyAnalysis, "info") + 
-               (anomalies.length > 0 ? formatAIResponse("🚨 <strong>Anomali terdeteksi:</strong> " + anomalies.join(", "), "warning") : "") +
-               (insights.length > 0 ? formatAIResponse("💡 <strong>Insights:</strong> " + insights.join(" "), "insight") : "") +
-               (smartSuggestions.length > 0 ? formatAIResponse("📋 <strong>Saran:</strong> " + smartSuggestions.join(" "), "success") : "");
-    }
-
-    // Jika tidak ditangani oleh logika lama, gunakan enhanced analysis
-    return performEnhancedAnalysis(normalizedQ, cleanLog, type, anomalies, insights, smartSuggestions);
-}
-
-// --- AI ENHANCEMENTS: SUPPORT FUNCTIONS ---
-
-function formatAIResponse(message, type = 'info') {
-    const formats = {
-        info: 'text-white',
-        warning: 'text-warning',
-        error: 'text-danger',
-        success: 'text-success',
-        insight: 'text-neon font-bold'
-    };
-
-    const icons = {
-        info: '💡',
-        warning: '⚠️',
-        error: '❌',
-        success: '✅',
-        insight: '🔍'
-    };
-
-    return `<div class="${formats[type]} text-sm font-mono mb-2">
-        ${icons[type]} ${message}
-    </div>`;
-}
-
-function isFollowUpQuestion(question) {
-    const followUpKeywords = ['itu', 'tersebut', 'sebelumnya', 'lalu', 'lagi', 'lanjut'];
-    return followUpKeywords.some(keyword => question.includes(keyword)) && aiContext.lastQuestion;
-}
-
-function handleFollowUpQuestion(question, logContent, type) {
-    return formatAIResponse("Berdasarkan pertanyaan sebelumnya: " + aiContext.lastQuestion, "info") +
-           formatAIResponse("Response: " + aiContext.lastResponse, "info") +
-           formatAIResponse("Ada yang ingin didalami lagi dari analisis sebelumnya?", "info");
-}
-
-function detectAnomalies(logContent, type) {
-    const anomalies = [];
-    const lines = logContent.split('\n');
-
-    // Deteksi retract beruntun
-    const retractCount = (logContent.match(/retract/gi) || []).length;
-    if (retractCount > 5) anomalies.push(`Tingkat retract tinggi (${retractCount}x)`);
-
-    // Deteksi error beruntun
-    const errorCount = (logContent.match(/error/gi) || []).length;
-    if (errorCount > 3) anomalies.push(`Banyak error (${errorCount}x)`);
-
-    // Deteksi berdasarkan mesin
-    if (type === 'hyosung') {
-        const d000Count = (logContent.match(/d000/gi) || []).length;
-        if (d000Count > 0) anomalies.push(`Error d000: ${d000Count}x`);
-    }
-    if (type === 'wincor') {
-        const cmdRejectCount = (logContent.match(/cmd_reject/gi) || []).length;
-        if (cmdRejectCount > 0) anomalies.push(`CMD_REJECT: ${cmdRejectCount}x`);
-    }
-    if (type === 'jalin') {
-        const dispenseFailCount = (logContent.match(/DISPENSE FAIL/gi) || []).length;
-        if (dispenseFailCount > 0) anomalies.push(`DISPENSE FAIL: ${dispenseFailCount}x`);
-    }
-
-    return anomalies;
-}
-
-function generateProactiveInsights(logContent, type) {
-    const insights = [];
-
-    // Insight berdasarkan jumlah transaksi
-    const transactionCount = (logContent.match(/Request Count/gi) || []).length;
-    if (transactionCount > 50) insights.push(`Tingkat transaksi tinggi (${transactionCount}x)`);
-
-    // Insight berdasarkan waktu
-    const timePatterns = logContent.match(/\d{2}:\d{2}:\d{2}/g);
-    if (timePatterns) {
-        const hours = timePatterns.map(time => parseInt(time.split(':')[0]));
-        const morningCount = hours.filter(h => h >= 8 && h < 12).length;
-        const afternoonCount = hours.filter(h => h >= 12 && h < 17).length;
-        if (morningCount > afternoonCount) insights.push("Puncak transaksi: pagi hari");
-        else if (afternoonCount > morningCount) insights.push("Puncak transaksi: siang/sore hari");
-    }
-
-    return insights;
-}
-
-function isComplexQuery(question) {
-    const complexKeywords = ['bandingkan', 'prediksi', 'ringkasan', 'analisis pattern', 'deteksi anomaly', 'visualisasi'];
-    return complexKeywords.some(keyword => question.includes(keyword));
-}
-
-function handleComplexQuery(question, logContent, type) {
-    if (question.includes('bandingkan')) {
-        return handleComparisonQuery(question, logContent, type);
-    } else if (question.includes('prediksi')) {
-        return handlePredictionQuery(question, logContent, type);
-    } else if (question.includes('ringkasan')) {
-        return handleSummaryQuery(question, logContent, type);
-    } else if (question.includes('analisis pattern') || question.includes('deteksi anomaly')) {
-        return handlePatternAnalysisQuery(question, logContent, type);
-    }
-
-    return formatAIResponse("Maaf, saya belum bisa menangani pertanyaan kompleks tersebut. Coba gunakan kata kunci yang lebih sederhana.", "error");
-}
-
-function handleComparisonQuery(question, logContent, type) {
-    const lines = logContent.split('\n');
-    const todayErrors = lines.filter(line => line.toLowerCase().includes('error')).length;
-    const todayRetracts = lines.filter(line => line.toLowerCase().includes('retract')).length;
-    
-    // Simulasi perbandingan dengan "kemarin" (dummy data)
-    const yesterdayErrors = Math.floor(todayErrors * 0.7);
-    const yesterdayRetracts = Math.floor(todayRetracts * 0.8);
-
-    return formatAIResponse("📊 <strong>Perbandingan Performance:</strong>", "info") +
-           formatAIResponse(`- Error Hari Ini: ${todayErrors} vs Kemarin: ${yesterdayErrors}`, 
-                          todayErrors > yesterdayErrors ? "warning" : "success") +
-           formatAIResponse(`- Retract Hari Ini: ${todayRetracts} vs Kemarin: ${yesterdayRetracts}`, 
-                          todayRetracts > yesterdayRetracts ? "warning" : "success") +
-           formatAIResponse(`Trend: ${todayErrors > yesterdayErrors ? '⚠️ Peningkatan Error' : '✅ Perbaikan'}`, 
-                          todayErrors > yesterdayErrors ? "warning" : "success");
-}
-
-function handlePredictionQuery(question, logContent, type) {
-    const lines = logContent.split('\n');
-    let dispenseCount = 0;
-    lines.forEach(line => {
-        if (line.includes('Request Count') || line.includes('DISPENSE') || line.includes('CASH')) {
-            dispenseCount++;
-        }
-    });
-
-    // Prediksi sederhana
-    const averagePerTransaction = 500000;
-    const totalDispense = dispenseCount * averagePerTransaction;
-    const replenishThreshold = 8000000;
-
-    if (totalDispense > replenishThreshold) {
-        return formatAIResponse("🚨 <strong>PREDIKSI REPLENISH:</strong> ASAP!", "warning") +
-               formatAIResponse(`Saldo diperkirakan hampir habis. Total dispense: Rp ${totalDispense.toLocaleString('id-ID')}`, "warning");
-    } else {
-        const remaining = replenishThreshold - totalDispense;
-        const daysLeft = Math.floor(remaining / (averagePerTransaction * 10));
-        return formatAIResponse("📈 <strong>PREDIKSI REPLENISH:</strong>", "success") +
-               formatAIResponse(`Dalam ${daysLeft} hari lagi (estimasi)`, "success") +
-               formatAIResponse(`Sisa kapasitas: Rp ${remaining.toLocaleString('id-ID')}`, "info");
-    }
-}
-
-function handleSummaryQuery(question, logContent, type) {
-    const transactionCount = (logContent.match(/Request Count/gi) || []).length;
-    const errorCount = (logContent.match(/error/gi) || []).length;
-    const retractCount = (logContent.match(/retract/gi) || []).length;
-
-    // Analisis jam sibuk
-    const timePatterns = logContent.match(/\d{2}:\d{2}:\d{2}/g);
-    let peakHour = "Tidak terdeteksi";
-    if (timePatterns) {
-        const hours = timePatterns.map(time => parseInt(time.split(':')[0]));
-        const hourCounts = hours.reduce((acc, hour) => {
-            acc[hour] = (acc[hour] || 0) + 1;
-            return acc;
-        }, {});
-        peakHour = Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b) + ':00';
-    }
-
-    return formatAIResponse("📋 <strong>RINGKASAN TRANSAKSI:</strong>", "info") +
-           formatAIResponse(`- Total Transaksi: ${transactionCount}`, "info") +
-           formatAIResponse(`- Total Error: ${errorCount}`, errorCount > 0 ? "warning" : "success") +
-           formatAIResponse(`- Total Retract: ${retractCount}`, retractCount > 0 ? "warning" : "success") +
-           formatAIResponse(`- Jam Sibuk: ${peakHour}`, "info") +
-           formatAIResponse("📊 <strong>SARAN VISUALISASI:</strong> Grafik line transaksi per jam, pie chart error vs success, heatmap jam sibuk.", "insight");
-}
-
-function handlePatternAnalysisQuery(question, logContent, type) {
-    const anomalies = detectAnomalies(logContent, type);
-    const insights = generateProactiveInsights(logContent, type);
-
-    let response = formatAIResponse("🔍 <strong>ANALISIS PATTERN & ANOMALI:</strong>", "info");
-    
-    if (anomalies.length > 0) {
-        response += formatAIResponse("🚨 <strong>ANOMALI TERDETEKSI:</strong>", "warning");
-        anomalies.forEach(anomaly => {
-            response += formatAIResponse(`- ${anomaly}`, "warning");
-        });
-    } else {
-        response += formatAIResponse("✅ <strong>Tidak ada anomali signifikan terdeteksi.</strong>", "success");
-    }
-
-    if (insights.length > 0) {
-        response += formatAIResponse("💡 <strong>INSIGHTS:</strong>", "insight");
-        insights.forEach(insight => {
-            response += formatAIResponse(`- ${insight}`, "insight");
-        });
-    }
-
-    // Tambahkan rekomendasi
-    if (anomalies.length > 0) {
-        response += formatAIResponse("🎯 <strong>REKOMENDASI:</strong> Cek fisik modul, lakukan preventive maintenance.", "warning");
-    }
-
-    return response;
-}
-
-function generateSmartSuggestions(logContent, type) {
-    const suggestions = [];
-
-    const errorCount = (logContent.match(/error/gi) || []).length;
-    if (errorCount > 5) {
-        suggestions.push("Cek detail error dengan: 'analisis pattern error'");
-    }
-
-    const retractCount = (logContent.match(/retract/gi) || []).length;
-    if (retractCount > 3) {
-        suggestions.push("Analisis retract dengan: 'deteksi anomaly'");
-    }
-
-    const transactionCount = (logContent.match(/Request Count/gi) || []).length;
-    if (transactionCount > 30) {
-        suggestions.push("Lihat ringkasan dengan: 'buat ringkasan transaksi'");
-    }
-
-    return suggestions;
-}
-
-function performEnhancedAnalysis(question, logContent, type, anomalies, insights, smartSuggestions) {
-    let response = formatAIResponse("🤖 <strong>ENHANCED AI ANALYSIS:</strong>", "info") +
-                 formatAIResponse("Saya menganalisis log dengan kemampuan AI yang ditingkatkan.", "info");
-
-    // Jika ada anomalies atau insights, tampilkan
-    if (anomalies.length > 0) {
-        response += formatAIResponse("🚨 <strong>Anomali terdeteksi:</strong> " + anomalies.join(", "), "warning");
-    }
-    if (insights.length > 0) {
-        response += formatAIResponse("💡 <strong>Insights:</strong> " + insights.join(" "), "insight");
-    }
-    if (smartSuggestions.length > 0) {
-        response += formatAIResponse("📋 <strong>Saran analisis lanjutan:</strong> " + smartSuggestions.join(" "), "success");
-    }
-
-    response += formatAIResponse("🔧 <strong>Coba fitur analisis lanjutan dengan contoh pertanyaan di atas!</strong>", "info");
-
-    return response;
-}
-
-function learnFromInteraction(question, response, wasHelpful) {
-    if (wasHelpful) {
-        userPatterns.frequentQueries.push({
-            question: question.toLowerCase(),
-            timestamp: Date.now(),
-            machineType: aiContext.machineType
-        });
-
-        // Simpan ke localStorage
-        if (typeof(Storage) !== "undefined") {
-            localStorage.setItem('aiUserPatterns', JSON.stringify(userPatterns));
-        }
-    }
-}
-
-function loadUserPatterns() {
-    if (typeof(Storage) !== "undefined") {
-        const stored = localStorage.getItem('aiUserPatterns');
-        if (stored) {
-            userPatterns = JSON.parse(stored);
-        }
-    }
-}
-
-// --- LOGIKA AI LAMA (DIJAGA UNTUK KOMPATIBILITAS) ---
-function generateAIAnalysis(question, log, type) {
-    const cleanLog = cleanAnsiCodes(log || "");
-    if (!cleanLog || cleanLog.length < 50) return "Log kosong atau terlalu pendek. Harap upload log terlebih dahulu.";
-
-    const lowerLog = cleanLog.toLowerCase();
-    const lowerQ = question.toLowerCase();
-    const lines = cleanLog.split('\n');
-
-    // FITUR BARU 1: PENCARIAN KATA KUNCI (SEARCH)
-    if (lowerQ.startsWith('cari ')) {
-        const keyword = lowerQ.replace('cari ', '').trim();
-        if (!keyword) return "Kata kunci pencarian tidak boleh kosong.";
-        
-        const matches = lines.filter(line => line.toLowerCase().includes(keyword));
-        if (matches.length === 0) return `Tidak ditemukan baris yang mengandung kata "<span class="text-danger">${keyword}</span>".`;
-        
-        const preview = matches.slice(0, 10).map(l => l.trim()).join('<br>');
-        const moreCount = matches.length > 10 ? `<br>...dan ${matches.length - 10} baris lainnya.` : '';
-        
-        return `Ditemukan <b>${matches.length}</b> baris dengan kata "<span class="text-neon">${keyword}</span>".<br><br>Preview:<br><div class='text-[10px] font-mono mt-2 p-2 bg-black/30 rounded border border-slate-700 overflow-x-auto'>${preview}${moreCount}</div>`;
-    }
-
-    // FITUR BARU 2: KALKULATOR / PENGHITUNG (COUNT)
-    if (lowerQ.startsWith('hitung total ') || lowerQ.startsWith('hitung jumlah ') || lowerQ.startsWith('berapa kali ')) {
-         const keyword = lowerQ.replace(/hitung total |hitung jumlah |berapa kali /g, '').trim();
-         if (!keyword) return "Kata kunci penghitungan tidak boleh kosong.";
-         
-         const count = (lowerLog.match(new RegExp(escapeRegExp(keyword), 'g')) || []).length;
-         return `Kata kunci "<span class="text-warning">${keyword}</span>" muncul sebanyak <b>${count}</b> kali dalam seluruh file log.`;
-    }
-
-    // FITUR BARU 3: PENJUMLAHAN NILAI (SUM)
-    if (lowerQ.startsWith('jumlahkan ') || lowerQ.startsWith('total nilai ')) {
-        const keyword = lowerQ.replace(/jumlahkan nilai |jumlahkan |total nilai /g, '').trim();
-        if (!keyword) return "Kata kunci penjumlahan tidak boleh kosong.";
-        
-        const matchedLines = lines.filter(line => line.toLowerCase().includes(keyword));
-        let totalSum = 0;
-        let countFound = 0;
-        
-        matchedLines.forEach(line => {
-            const numbers = line.match(/\d+/g);
-            if (numbers) {
-                numbers.forEach(numStr => {
-                    const val = parseInt(numStr);
-                    if (!isNaN(val)) {
-                        totalSum += val;
-                    }
-                });
-                countFound++;
-            }
-        });
-        
-        return `Total akumulasi angka pada baris yang mengandung "${keyword}":<br><span class="text-neon text-xl font-bold">Rp ${totalSum.toLocaleString('id-ID')}</span><br><span class="text-xs text-slate-400">(Data diambil dari ${matchedLines.length} baris relevan)</span>`;
-    }
-
-    // --- LOGIKA LAMA (FALLBACK) ---
-    
-    if (lowerQ.includes('sisa') || lowerQ.includes('remaining') || lowerQ.includes('balance') || lowerQ.includes('akhir')) {
-        let elId = '';
-        if (type === 'crm') elId = 'remAmount';
-        else if (type === 'hyosung') elId = 'hyosungTotalRemaining';
-        else if (type === 'wincor') elId = 'wincorTotalRemaining';
-        else if (type === 'ncr') elId = 'ncrTotalRemaining';
-        else if (type === 'jalin') elId = 'jalinTotalRemaining';
-
-        const val = document.getElementById(elId)?.textContent || '0';
-        return `Berdasarkan filter di layar, <b>Sisa Uang (Remaining)</b> tercatat sebesar: <span class="text-warning font-bold">${val}</span>.`;
-    }
-
-     if (lowerQ.includes('dispense') || lowerQ.includes('keluar') || lowerQ.includes('total amount')) {
-        let elId = '';
-        if (type === 'crm') elId = 'dispAmount';
-        else if (type === 'hyosung') elId = 'hyosungTotalAmount';
-        else if (type === 'wincor') elId = 'wincorTotalAmount';
-        else if (type === 'ncr') elId = 'ncrTotalAmount';
-        else if (type === 'jalin') elId = 'jalinTotalAmount';
-
-        const val = document.getElementById(elId)?.textContent || '0';
-        return `Total <b>Dispensed (Uang Keluar)</b> berdasarkan filter adalah: <span class="text-danger font-bold">${val}</span>.`;
-    }
-    
-    if (lowerQ.includes('error') || lowerQ.includes('masalah') || lowerQ.includes('analisa') || lowerQ.includes('cek') || lowerQ.includes('aneh')) {
-        const errors = [];
-        
-        if (lowerLog.includes('retract')) errors.push("- Terdeteksi 'RETRACT'.");
-        if (lowerLog.includes('reject')) errors.push("- Terdeteksi 'REJECT'.");
-        if (lowerLog.includes('dispense fail') || lowerLog.includes('dispenser error')) errors.push("- Terdeteksi kegagalan Dispense.");
-        if (lowerLog.includes('jam') || lowerLog.includes('jammed')) errors.push("- Terdeteksi 'JAM'.");
-        if (lowerLog.includes('hardware error')) errors.push("- Terdeteksi Hardware Error.");
-        
-        if (type === 'hyosung') {
-            if (lowerLog.includes('d000')) errors.push("- Error Code 'd000' (Dispenser Failure).");
-            if (lowerLog.includes('20001')) errors.push("- Error Code '20001' (Return Error/Jam).");
-            if (lowerLog.includes('2d000')) errors.push("- Error Code '2d000' (Dispenser Fatal Error).");
-        }
-        if (type === 'wincor') {
-            if (lowerLog.includes('cmd_reject')) errors.push("- 'CMD_REJECT'.");
-            if (lowerLog.includes('cassette empty')) errors.push("- Peringatan Kaset Kosong.");
-        }
-        if (type === 'ncr') {
-            if (lowerLog.includes('m-status') && lowerLog.includes('fail')) errors.push("- NCR M-Status Failure.");
-        }
-        if (type === 'jalin') {
-            if (lowerLog.includes('dispense fail')) errors.push("- Dispense Fail terdeteksi.");
-            if (lowerLog.includes('cassette empty')) errors.push("- Peringatan Kaset Kosong.");
-        }
-        
-        if (errors.length > 0) {
-            return "Ditemukan indikasi anomali/error:<br>" + errors.join("<br>") + "<br>Saran: Cek fisik modul.";
-        } else {
-            return "Tidak ditemukan kata kunci error umum (Jam/Reject/Code Spesifik). Transaksi terlihat wajar.";
-        }
-    }
-
-    if (question.includes('id') || question.includes('mesin')) {
-        return "ID Mesin telah diekstrak dan ditampilkan di panel hasil sebelah kiri/atas.";
-    }
-
-    return "AI Enhanced siap. Gunakan contoh pertanyaan di atas untuk analisis lanjutan.";
-}
-
-// --- LOGIKA BISNIS & REKONSILIASI (TIDAK DIUBAH) ---
-
+// --- LOGIKA REKONSILIASI ---
 function updateReconciliationUI(physVal, sysVal, boxId, textId, expressionId) {
     const box = document.getElementById(boxId);
     const text = document.getElementById(textId);
@@ -771,7 +472,7 @@ function updateReconciliationTable(physVal, sysVal, cellId, badgeId) {
     cell.textContent = physVal.toLocaleString('id-ID');
 }
 
-// CRM CLASS (TIDAK DIUBAH)
+// CRM CLASS - DENGAN FILTER PERIODE BERDASARKAN DISPENSE
 class DataFilterCRMHitachi {
     constructor() {
         this.logInput = document.getElementById('crmLogInput');
@@ -800,20 +501,165 @@ class DataFilterCRMHitachi {
         this.storedCountTotal = document.getElementById('storedCountTotal');
         this.storedCountList = document.getElementById('storedCountList');
 
+        // Periode
+        this.periods = [];
+        this.currentPeriod = null;
+
         if (this.filterButton) {
             this.filterButton.addEventListener('click', () => this.filterData());
         }
     }
 
-    findReplenishmentPeriod(lines) {
+    // Fungsi untuk mencari periode replenish dalam log CRM dengan FILTER DISPENSE
+    findReplenishmentPeriods(lines) {
+        const periods = [];
+        const replenishmentIndices = [];
+        
+        // Cari semua baris REPLENISHMENT
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trim().includes('REPLENISHMENT')) {
+                // Ambil tanggal dari format: 28/08/2025 20:11:46 REPLENISHMENT
+                const dateMatch = lines[i].match(/(\d{2}\/\d{2}\/\d{4})/);
+                if (dateMatch) {
+                    // Konversi ke format dd/mm/yy
+                    const [day, month, year] = dateMatch[1].split('/');
+                    const formattedDate = `${day}/${month}/${year.slice(-2)}`;
+                    replenishmentIndices.push({
+                        index: i,
+                        date: formattedDate // Format: dd/mm/yy
+                    });
+                }
+            }
+        }
+        
+        // Buat periode dari setiap dua REPLENISHMENT berurutan
+        for (let i = 0; i < replenishmentIndices.length - 1; i++) {
+            const startIdx = replenishmentIndices[i].index;
+            const endIdx = replenishmentIndices[i + 1].index;
+            
+            // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+            // Cek apakah ada transaksi dispense ("Request Count") dalam periode ini
+            let hasDispense = false;
+            for (let j = startIdx + 1; j < endIdx; j++) {
+                if (lines[j].indexOf('Request Count') === 0) {
+                    hasDispense = true;
+                    break;
+                }
+            }
+            
+            // Hanya tambahkan periode jika ADA transaksi dispense
+            if (hasDispense) {
+                periods.push({
+                    startIndex: startIdx,
+                    endIndex: endIdx,
+                    startDate: replenishmentIndices[i].date,
+                    endDate: replenishmentIndices[i + 1].date,
+                    displayText: `${replenishmentIndices[i].date} - ${replenishmentIndices[i + 1].date}`
+                });
+            }
+        }
+        
+        return periods;
+    }
+
+    // Fungsi untuk menampilkan periode di UI
+    displayPeriods() {
+        const periodDisplay = document.getElementById('crmPeriodDisplay');
+        if (!periodDisplay) return;
+        
+        periodDisplay.innerHTML = '';
+        periodDisplay.classList.remove('hidden');
+        
+        if (this.periods.length === 0) {
+            periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode dengan transaksi dispense</span>';
+            return;
+        }
+        
+        // Tentukan periode default
+        let defaultPeriodIndex = this.periods.length - 1;
+        if (this.periods.length > 1) {
+            const lastPeriod = this.periods[this.periods.length - 1];
+            // Jika periode terakhir adalah "sekarang" (tidak dibatasi oleh add cash)
+            if (lastPeriod.displayText.includes('Sekarang') || !lastPeriod.endDate) {
+                // Pilih periode kedua dari terakhir
+                defaultPeriodIndex = this.periods.length - 2;
+            } else {
+                defaultPeriodIndex = this.periods.length - 1;
+            }
+        }
+        
+        // Buat tombol untuk setiap periode
+        this.periods.forEach((period, index) => {
+            const button = document.createElement('button');
+            button.textContent = period.displayText;
+            button.className = 'period-btn crm';
+            
+            // Jika ini periode default, set sebagai active
+            if (index === defaultPeriodIndex) {
+                button.classList.add('active');
+                this.currentPeriod = period;
+                this.updateSelectedPeriodUI(period);
+            } else if (this.currentPeriod && this.currentPeriod.displayText === period.displayText) {
+                button.classList.add('active');
+            }
+            
+            button.addEventListener('click', () => {
+                // Update current period
+                this.currentPeriod = period;
+                
+                // Update UI tombol
+                document.querySelectorAll('#crmPeriodDisplay .period-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                // Update selected period UI
+                this.updateSelectedPeriodUI(period);
+                
+                // Analisis untuk periode ini
+                this.analyzePeriod(period);
+            });
+            
+            periodDisplay.appendChild(button);
+        });
+        
+        // Analisis untuk periode default
+        if (this.currentPeriod) {
+            this.analyzePeriod(this.currentPeriod);
+        }
+    }
+    
+    updateSelectedPeriodUI(period) {
+        const selectedDiv = document.getElementById('crmPeriodSelected');
+        const selectedText = document.getElementById('crmSelectedPeriodText');
+        
+        if (selectedDiv && selectedText) {
+            selectedDiv.classList.remove('hidden');
+            selectedText.textContent = period.displayText;
+        }
+    }
+
+    findReplenishmentPeriod(lines, period = null) {
+        if (period) {
+            // Gunakan periode yang ditentukan
+            return { 
+                start: period.startIndex + 1,
+                end: period.endIndex - 1,
+                initIndex: period.startIndex
+            };
+        }
+        
+        // Default: cari periode terakhir yang diapit 2 add cash
         const replenishmentIndices = [];
         for (let i = lines.length - 1; i >= 0; i--) {
             if (lines[i].trim().endsWith('REPLENISHMENT')) {
                 replenishmentIndices.push(i);
-                if (replenishmentIndices.length === 2) break; 
+                if (replenishmentIndices.length === 3) break; // Ambil 3 terakhir
             }
         }
-        if (replenishmentIndices.length === 2) {
+        
+        // Jika ada minimal 2 periode, ambil periode kedua dari terakhir
+        if (replenishmentIndices.length >= 2) {
             return { 
                 start: replenishmentIndices[1] + 1,
                 end: replenishmentIndices[0] - 1,
@@ -831,8 +677,8 @@ class DataFilterCRMHitachi {
         return { start: 0, end: lines.length - 1, initIndex: -1 };
     }
 
-    calculateDISP(lines) {
-        const { start, end } = this.findReplenishmentPeriod(lines);
+    calculateDISP(lines, period = null) {
+        const { start, end } = this.findReplenishmentPeriod(lines, period);
         const totals = { disp1: 0, disp2: 0, disp3: 0, disp4: 0 };
         for (let i = start; i <= end; i++) {
             const line = lines[i];
@@ -851,8 +697,8 @@ class DataFilterCRMHitachi {
     totalDisp100(totals) { return totals.disp1 + totals.disp2; }
     totalDisp50(totals) { return totals.disp3 + totals.disp4; }
 
-    calculateDEP(lines) {
-        const { start, end } = this.findReplenishmentPeriod(lines);
+    calculateDEP(lines, period = null) {
+        const { start, end } = this.findReplenishmentPeriod(lines, period);
         let totalDep1 = 0, totalDep2 = 0;
         for (let i = start; i <= end; i++) {
             if (lines[i].includes('Stored Count')) {
@@ -873,8 +719,8 @@ class DataFilterCRMHitachi {
         return [totalDep1, totalDep2];
     }
 
-    calculateINIT(lines) {
-        const { initIndex } = this.findReplenishmentPeriod(lines);
+    calculateINIT(lines, period = null) {
+        const { initIndex } = this.findReplenishmentPeriod(lines, period);
         if (initIndex === -1) return [0, 0]; 
         let init100 = 0, init50 = 0;
         for (let j = initIndex + 3; j < initIndex + 7 && j < lines.length; j++) { 
@@ -887,10 +733,10 @@ class DataFilterCRMHitachi {
         return [init100, init50];
     }
 
-    calculateREM(lines) {
-        const [totalDisp1, totalDisp2, totalDisp3, totalDisp4] = this.calculateDISP(lines);
-        const [totalDep1, totalDep2] = this.calculateDEP(lines);
-        const [init100, init50] = this.calculateINIT(lines);
+    calculateREM(lines, period = null) {
+        const [totalDisp1, totalDisp2, totalDisp3, totalDisp4] = this.calculateDISP(lines, period);
+        const [totalDep1, totalDep2] = this.calculateDEP(lines, period);
+        const [init100, init50] = this.calculateINIT(lines, period);
         const rem100 = init100 - this.totalDisp100({ disp1: totalDisp1, disp2: totalDisp2 }) + totalDep1;
         const rem50 = init50 - this.totalDisp50({ disp3: totalDisp3, disp4: totalDisp4 }) + totalDep2;
         return [rem100, rem50];
@@ -904,8 +750,8 @@ class DataFilterCRMHitachi {
         return "Not Found";
     }
 
-    extractCashPresented(lines) {
-        const { start, end } = this.findReplenishmentPeriod(lines);
+    extractCashPresented(lines, period = null) {
+        const { start, end } = this.findReplenishmentPeriod(lines, period);
         const cashPresentedTransactions = [];
         let totalAmountCalculated = 0;
 
@@ -930,9 +776,9 @@ class DataFilterCRMHitachi {
         return { count: cashPresentedTransactions.length, total: totalAmountCalculated, list: cashPresentedTransactions };
     }
 
-    extractStoredCount(lines) {
-        const { start, end } = this.findReplenishmentPeriod(lines);
-        const [totalDep1, totalDep2] = this.calculateDEP(lines);
+    extractStoredCount(lines, period = null) {
+        const { start, end } = this.findReplenishmentPeriod(lines, period);
+        const [totalDep1, totalDep2] = this.calculateDEP(lines, period);
         const totalAmount = (totalDep1 * 100000) + (totalDep2 * 50000);
         const storedTransactions = [];
         
@@ -962,10 +808,21 @@ class DataFilterCRMHitachi {
         const machineID = this.findMachineID(lines);
         this.machineDisplay.innerHTML = `<span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span> MACHINE: ${machineID}`;
         
-        const [totalDisp1, totalDisp2, totalDisp3, totalDisp4] = this.calculateDISP(lines);
-        const [totalDep1, totalDep2] = this.calculateDEP(lines);
-        const [init100, init50] = this.calculateINIT(lines);
-        const [rem100, rem50] = this.calculateREM(lines);
+        // Cari semua periode DENGAN FILTER DISPENSE
+        this.periods = this.findReplenishmentPeriods(lines);
+        
+        // Tampilkan periode di UI (akan otomatis menganalisis periode default)
+        this.displayPeriods();
+    }
+    
+    analyzePeriod(period) {
+        const logInput = cleanAnsiCodes(this.logInput.value);
+        const lines = logInput.split('\n');
+        
+        const [totalDisp1, totalDisp2, totalDisp3, totalDisp4] = this.calculateDISP(lines, period);
+        const [totalDep1, totalDep2] = this.calculateDEP(lines, period);
+        const [init100, init50] = this.calculateINIT(lines, period);
+        const [rem100, rem50] = this.calculateREM(lines, period);
         
         this.init100.textContent = init100;
         this.init50.textContent = init50;
@@ -986,7 +843,7 @@ class DataFilterCRMHitachi {
         this.depAmount.textContent = depAmount.toLocaleString('id-ID');
         this.remAmount.textContent = remAmount.toLocaleString('id-ID');
         
-        const cashPresented = this.extractCashPresented(lines);
+        const cashPresented = this.extractCashPresented(lines, period);
         this.cashPresentedCount.textContent = cashPresented.count;
         this.cashPresentedTotal.textContent = cashPresented.total.toLocaleString('id-ID');
         this.cashPresentedList.innerHTML = '';
@@ -997,7 +854,7 @@ class DataFilterCRMHitachi {
             this.cashPresentedList.appendChild(li);
         });
 
-        const storedCountData = this.extractStoredCount(lines);
+        const storedCountData = this.extractStoredCount(lines, period);
         this.storedCountCount.textContent = storedCountData.count;
         this.storedCountTotal.textContent = storedCountData.total.toLocaleString('id-ID');
         this.storedCountList.innerHTML = '';
@@ -1028,96 +885,748 @@ class DataFilterCRMHitachi {
     }
 }
 
-// WINCOR LOGIC (TIDAK DIUBAH)
-function filterCash() {
-    const logTextRaw = document.getElementById('wincorLogInput').value;
-    const logText = cleanAnsiCodes(logTextRaw);
-    const cashLists = { 'wincorCash1': [], 'wincorCash2': [], 'wincorCash3': [], 'wincorCash4': [] };
+// --- FUNGSI PERIODE UNTUK HYOSUNG DENGAN FILTER DISPENSE ---
+function findHyosungPeriods(logLines) {
+    const periods = [];
+    const addCashIndices = [];
+
+    // Cari semua baris "ADD CASH:"
+    for (let i = 0; i < logLines.length; i++) {
+        if (logLines[i].includes('ADD CASH:')) {
+            // Ambil tanggal dari baris sebelumnya (i-1)
+            if (i > 0) {
+                const dateMatch = logLines[i-1].match(/(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2})/);
+                if (dateMatch) {
+                    const dateStr = dateMatch[1];
+                    const datePart = dateStr.split(' ')[0]; // Format: dd/mm/yyyy
+                    // Konversi ke dd/mm/yy
+                    const [day, month, year] = datePart.split('/');
+                    const formattedDate = `${day}/${month}/${year.slice(-2)}`;
+                    addCashIndices.push({ index: i, date: formattedDate });
+                }
+            }
+        }
+    }
+
+    // Buat periode dari setiap dua "ADD CASH:" berurutan
+    for (let i = 0; i < addCashIndices.length; i++) {
+        const startIdx = addCashIndices[i].index;
+        const startDate = addCashIndices[i].date;
+        let endDate = null;
+        let endIdx = logLines.length;
+
+        if (i < addCashIndices.length - 1) {
+            endIdx = addCashIndices[i+1].index;
+            endDate = addCashIndices[i+1].date;
+        }
+
+        // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+        // Cek apakah ada transaksi dispense ("Request Count") dalam periode ini
+        let hasDispense = false;
+        for (let j = startIdx + 1; j < endIdx; j++) {
+            if (logLines[j].includes('Request Count')) {
+                hasDispense = true;
+                break;
+            }
+        }
+        
+        // Hanya tambahkan periode jika ADA transaksi dispense
+        if (hasDispense) {
+            periods.push({
+                startIndex: startIdx,
+                endIndex: endIdx,
+                startDate: startDate,
+                endDate: endDate,
+                displayText: endDate ? `${startDate} - ${endDate}` : `${startDate} - Sekarang`
+            });
+        }
+    }
+
+    return periods;
+}
+
+function displayHyosungPeriods() {
+    const periodDisplay = document.getElementById('hyosungPeriodDisplay');
+    if (!periodDisplay) return;
     
-    if (!logText) {
+    periodDisplay.innerHTML = '';
+    periodDisplay.classList.remove('hidden');
+    
+    if (hyosungPeriods.length === 0) {
+        periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode dengan transaksi dispense</span>';
         return;
     }
+    
+    // Tentukan periode default
+    let defaultPeriodIndex = hyosungPeriods.length - 1;
+    if (hyosungPeriods.length > 1) {
+        const lastPeriod = hyosungPeriods[hyosungPeriods.length - 1];
+        // Jika periode terakhir adalah "sekarang" (tidak dibatasi oleh add cash)
+        if (lastPeriod.displayText.includes('Sekarang') || !lastPeriod.endDate) {
+            // Cari periode terakhir yang memiliki endDate (periode yang sudah selesai)
+            for (let i = hyosungPeriods.length - 2; i >= 0; i--) {
+                if (hyosungPeriods[i].endDate) {
+                    defaultPeriodIndex = i;
+                    break;
+                }
+            }
+        } else {
+            defaultPeriodIndex = hyosungPeriods.length - 1;
+        }
+    }
+    
+    // Buat tombol untuk setiap periode
+    hyosungPeriods.forEach((period, index) => {
+        const button = document.createElement('button');
+        button.textContent = period.displayText;
+        button.className = 'period-btn hyosung';
+        
+        // Jika ini periode default, set sebagai active
+        if (index === defaultPeriodIndex) {
+            button.classList.add('active');
+            currentHyosungPeriod = period;
+            updateHyosungSelectedPeriodUI(period);
+        } else if (currentHyosungPeriod && currentHyosungPeriod.displayText === period.displayText) {
+            button.classList.add('active');
+        }
+        
+        button.addEventListener('click', () => {
+            // Update current period
+            currentHyosungPeriod = period;
+            
+            // Update UI tombol
+            document.querySelectorAll('#hyosungPeriodDisplay .period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Update selected period UI
+            updateHyosungSelectedPeriodUI(period);
+            
+            // Analisis untuk periode ini
+            analyzeHyosungPeriod(period);
+        });
+        
+        periodDisplay.appendChild(button);
+    });
+    
+    // Analisis untuk periode default
+    if (currentHyosungPeriod) {
+        analyzeHyosungPeriod(currentHyosungPeriod);
+    }
+}
+
+function updateHyosungSelectedPeriodUI(period) {
+    const selectedDiv = document.getElementById('hyosungPeriodSelected');
+    const selectedText = document.getElementById('hyosungSelectedPeriodText');
+    
+    if (selectedDiv && selectedText) {
+        selectedDiv.classList.remove('hidden');
+        selectedText.textContent = period.displayText;
+    }
+}
+
+function analyzeHyosungPeriod(period) {
+    const logTextRaw = document.getElementById('hyosungLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
     const logLines = logText.split('\n');
-    const atmID = findATM_ID(logText); 
-    displayWincorATM_ID(atmID);
-    
-    let lastAddCashIndex = -1;
-    let lastAddCashValue = 0;
-    for (let i = logLines.length - 1; i >= 0; i--) {
-        if (logLines[i].includes('CASH COUNTERS AFTER SOP')) {
-            const value = parseWincorAddCashNewValidated(logLines, i); 
-            if (value > 0) { 
-                lastAddCashIndex = i;
-                lastAddCashValue = value;
-                break; 
-            }
-        }
+
+    const atmID = findHyosungATM_ID(logText);
+    displayHyosungATM_ID(atmID);
+
+    // Parse add cash dari periode yang dipilih
+    let totalAddCashAwal = 0;
+    if (period) {
+        totalAddCashAwal = parseHyosungAddCashNew(logLines, period.startIndex);
     }
-    
-    let secondLastAddCashIndex = -1;
-    let secondLastAddCashValue = 0;
-    for (let i = lastAddCashIndex - 1; i >= 0; i--) {
-        if (logLines[i].includes('CASH COUNTERS AFTER SOP')) {
-            const value = parseWincorAddCashNewValidated(logLines, i); 
-            if (value > 0) { 
-                secondLastAddCashIndex = i;
-                secondLastAddCashValue = value;
-                break; 
-            }
-        }
-    }
-    
+
     // CEK INPUT MANUAL ADD CASH
-    const manualAddCash = parseInt(document.getElementById('wincorAddCashManual').value);
-    let totalAddCashAwal;
-    
+    const manualAddCash = parseInt(document.getElementById('hyosungAddCashManual').value);
     if (!isNaN(manualAddCash) && manualAddCash > 0) {
         totalAddCashAwal = manualAddCash;
-    } else {
-        if (secondLastAddCashIndex !== -1) {
-            totalAddCashAwal = secondLastAddCashValue;
-        } else if (lastAddCashIndex !== -1) {
-            totalAddCashAwal = lastAddCashValue;
+    }
+
+    displayHyosungTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
+
+    // Tentukan rentang baris untuk analisis dispense berdasarkan periode
+    let startLineDispense = period ? period.startIndex + 1 : 0;
+    let endLineDispense = period ? period.endIndex - 1 : logLines.length - 1;
+
+    const cashLists = { 'hyosungCash1': [], 'hyosungCash2': [], 'hyosungCash3': [], 'hyosungCash4': [] };
+
+    for (let i = startLineDispense; i <= endLineDispense; i++) {
+        const match = logLines[i].match(/Request Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+        if (match) {
+            const [, disp1, disp2, disp3, disp4] = match;
+            // Filter: hanya tambahkan jika nilainya > 0
+            if (parseInt(disp1) > 0) cashLists['hyosungCash1'].push(parseInt(disp1));
+            if (parseInt(disp2) > 0) cashLists['hyosungCash2'].push(parseInt(disp2));
+            if (parseInt(disp3) > 0) cashLists['hyosungCash3'].push(parseInt(disp3));
+            if (parseInt(disp4) > 0) cashLists['hyosungCash4'].push(parseInt(disp4));
+        }
+    }
+
+    // Tampilkan hasil dispense (dengan filter untuk nilai 0)
+    for (const [cashType, list] of Object.entries(cashLists)) {
+        displayHyosungResult(list, cashType);
+    }
+
+    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
+    document.getElementById('hyosungTotalAmount').textContent = `${totalAmount.toLocaleString('id-ID')}`;
+
+    const totalRemaining = calculateTotalRemaining(totalAddCashAwal, totalAmount);
+    displayHyosungTotalRemaining(totalRemaining.toLocaleString('id-ID'));
+
+    const physInput = document.getElementById('hyosungPhysInput');
+    if (physInput.value !== "") {
+        const physVal = parseInt(physInput.value) || 0;
+        document.getElementById('hyosungDisplayPhys').textContent = physVal.toLocaleString('id-ID');
+        updateReconciliationUI(physVal, totalRemaining, "hyosungReconBox", "hyosungReconResult", "hyosungExpression");
+    }
+}
+
+function filterHyosung() {
+    const logTextRaw = document.getElementById('hyosungLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+
+    // Cari periode DENGAN FILTER DISPENSE
+    hyosungPeriods = findHyosungPeriods(logLines);
+
+    // Tampilkan periode di UI (akan otomatis menganalisis periode default)
+    displayHyosungPeriods();
+}
+
+// --- FUNGSI PERIODE UNTUK NCR DENGAN FILTER DISPENSE ---
+function findNcrPeriods(logLines) {
+    const periods = [];
+    const cashAddedIndices = [];
+
+    // Cari semua baris "CASH ADDED"
+    for (let i = 0; i < logLines.length; i++) {
+        if (logLines[i].includes('CASH ADDED')) {
+            let dateStr = null;
+            
+            // Cari pattern *mm/dd/yyyy* di baris yang sama
+            let match = logLines[i].match(/\*(\d{2}\/\d{2}\/\d{4})\*/);
+            if (match) {
+                dateStr = match[1]; // format: mm/dd/yyyy
+                // Ubah menjadi dd/mm/yy
+                const [month, day, year] = dateStr.split('/');
+                dateStr = `${day}/${month}/${year.slice(-2)}`;
+            } else if (i > 0) {
+                // Cari di baris sebelumnya
+                match = logLines[i-1].match(/\*(\d{2}\/\d{2}\/\d{4})\*/);
+                if (match) {
+                    dateStr = match[1]; // format: mm/dd/yyyy
+                    // Ubah menjadi dd/mm/yy
+                    const [month, day, year] = dateStr.split('/');
+                    dateStr = `${day}/${month}/${year.slice(-2)}`;
+                }
+            }
+
+            if (dateStr) {
+                cashAddedIndices.push({ index: i, date: dateStr });
+            }
+        }
+    }
+
+    // Buat periode dari setiap dua "CASH ADDED" berurutan
+    for (let i = 0; i < cashAddedIndices.length; i++) {
+        const startIdx = cashAddedIndices[i].index;
+        const startDate = cashAddedIndices[i].date;
+        let endDate = null;
+        let endIdx = logLines.length;
+
+        if (i < cashAddedIndices.length - 1) {
+            endIdx = cashAddedIndices[i+1].index;
+            endDate = cashAddedIndices[i+1].date;
+        }
+
+        // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+        // Cek apakah ada transaksi dispense ("NOTES PRESENTED") dalam periode ini
+        let hasDispense = false;
+        for (let j = startIdx + 1; j < endIdx; j++) {
+            if (logLines[j].includes('NOTES PRESENTED')) {
+                hasDispense = true;
+                break;
+            }
+        }
+        
+        // Hanya tambahkan periode jika ADA transaksi dispense
+        if (hasDispense) {
+            periods.push({
+                startIndex: startIdx,
+                endIndex: endIdx,
+                startDate: startDate,
+                endDate: endDate,
+                displayText: endDate ? `${startDate} - ${endDate}` : `${startDate} - Sekarang`
+            });
+        }
+    }
+
+    return periods;
+}
+
+function displayNcrPeriods() {
+    const periodDisplay = document.getElementById('ncrPeriodDisplay');
+    if (!periodDisplay) return;
+    
+    periodDisplay.innerHTML = '';
+    periodDisplay.classList.remove('hidden');
+    
+    if (ncrPeriods.length === 0) {
+        periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode dengan transaksi dispense</span>';
+        return;
+    }
+    
+    // Tentukan periode default
+    let defaultPeriodIndex = ncrPeriods.length - 1;
+    if (ncrPeriods.length > 1) {
+        const lastPeriod = ncrPeriods[ncrPeriods.length - 1];
+        // Jika periode terakhir adalah "sekarang" (tidak dibatasi oleh add cash)
+        if (lastPeriod.displayText.includes('Sekarang') || !lastPeriod.endDate) {
+            // Cari periode terakhir yang memiliki endDate (periode yang sudah selesai)
+            for (let i = ncrPeriods.length - 2; i >= 0; i--) {
+                if (ncrPeriods[i].endDate) {
+                    defaultPeriodIndex = i;
+                    break;
+                }
+            }
         } else {
-            totalAddCashAwal = 0;
+            defaultPeriodIndex = ncrPeriods.length - 1;
         }
     }
     
-    displayWincorTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
+    // Buat tombol untuk setiap periode
+    ncrPeriods.forEach((period, index) => {
+        const button = document.createElement('button');
+        button.textContent = period.displayText;
+        button.className = 'period-btn ncr';
+        
+        // Jika ini periode default, set sebagai active
+        if (index === defaultPeriodIndex) {
+            button.classList.add('active');
+            currentNcrPeriod = period;
+            updateNcrSelectedPeriodUI(period);
+        } else if (currentNcrPeriod && currentNcrPeriod.displayText === period.displayText) {
+            button.classList.add('active');
+        }
+        
+        button.addEventListener('click', () => {
+            // Update current period
+            currentNcrPeriod = period;
+            
+            // Update UI tombol
+            document.querySelectorAll('#ncrPeriodDisplay .period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Update selected period UI
+            updateNcrSelectedPeriodUI(period);
+            
+            // Analisis untuk periode ini
+            analyzeNcrPeriod(period);
+        });
+        
+        periodDisplay.appendChild(button);
+    });
     
-    // PERBAIKAN: PERIODE DISPENSE HANYA DALAM RENTANG 2 ADD CASH
-    let startLineDispense = 0;
-    let endLineDispense = logLines.length - 1;
+    // Analisis untuk periode default
+    if (currentNcrPeriod) {
+        analyzeNcrPeriod(currentNcrPeriod);
+    }
+}
+
+function updateNcrSelectedPeriodUI(period) {
+    const selectedDiv = document.getElementById('ncrPeriodSelected');
+    const selectedText = document.getElementById('ncrSelectedPeriodText');
     
-    if (secondLastAddCashIndex !== -1 && lastAddCashIndex !== -1) {
-        startLineDispense = secondLastAddCashIndex + 1;
-        endLineDispense = lastAddCashIndex - 1;
-    } else if (lastAddCashIndex !== -1) {
-        startLineDispense = lastAddCashIndex + 1;
-    } else {
-        startLineDispense = 0;
-        endLineDispense = logLines.length - 1;
+    if (selectedDiv && selectedText) {
+        selectedDiv.classList.remove('hidden');
+        selectedText.textContent = period.displayText;
+    }
+}
+
+function analyzeNcrPeriod(period) {
+    const logTextRaw = document.getElementById('ncrLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+
+    const atmID = findNcrATM_ID(logText);
+    displayNcrATM_ID(atmID);
+
+    // Parse add cash dari periode yang dipilih
+    let totalAddCashAwal = 0;
+    if (period) {
+        totalAddCashAwal = parseNcrCashAddedNew(logLines, period.startIndex);
+    }
+
+    // CEK INPUT MANUAL ADD CASH
+    const manualAddCash = parseInt(document.getElementById('ncrAddCashManual').value);
+    if (!isNaN(manualAddCash) && manualAddCash > 0) {
+        totalAddCashAwal = manualAddCash;
+    }
+
+    displayNcrTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
+
+    // Tentukan rentang baris untuk analisis dispense berdasarkan periode
+    let startLineDispense = period ? period.startIndex + 1 : 0;
+    let endLineDispense = period ? period.endIndex - 1 : logLines.length - 1;
+
+    const cashLists = { 'ncrCash1': [], 'ncrCash2': [], 'ncrCash3': [], 'ncrCash4': [] };
+
+    for (let i = startLineDispense; i <= endLineDispense; i++) {
+        const match = logLines[i].match(/NOTES PRESENTED\s+(\d+),(\d+),(\d+),(\d+)/);
+        if (match) {
+            const [, disp1, disp2, disp3, disp4] = match;
+            // Filter: hanya tambahkan jika nilainya > 0
+            if (parseInt(disp1) > 0) cashLists['ncrCash1'].push(parseInt(disp1));
+            if (parseInt(disp2) > 0) cashLists['ncrCash2'].push(parseInt(disp2));
+            if (parseInt(disp3) > 0) cashLists['ncrCash3'].push(parseInt(disp3));
+            if (parseInt(disp4) > 0) cashLists['ncrCash4'].push(parseInt(disp4));
+        }
+    }
+
+    // Tampilkan hasil dispense (dengan filter untuk nilai 0)
+    for (const [cashType, list] of Object.entries(cashLists)) {
+        displayNcrResult(list, cashType);
+    }
+
+    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
+    document.getElementById('ncrTotalAmount').textContent = `${totalAmount.toLocaleString('id-ID')}`;
+
+    const totalRemaining = calculateTotalRemaining(totalAddCashAwal, totalAmount);
+    displayNcrTotalRemaining(totalRemaining.toLocaleString('id-ID'));
+
+    const physInput = document.getElementById('ncrPhysInput');
+    if (physInput.value !== "") {
+        const physVal = parseInt(physInput.value) || 0;
+        document.getElementById('ncrDisplayPhys').textContent = physVal.toLocaleString('id-ID');
+        updateReconciliationUI(physVal, totalRemaining, "ncrReconBox", "ncrReconResult", "ncrExpression");
+    }
+}
+
+function filterNcr() {
+    const logTextRaw = document.getElementById('ncrLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+
+    // Cari periode DENGAN FILTER DISPENSE
+    ncrPeriods = findNcrPeriods(logLines);
+
+    // Tampilkan periode di UI (akan otomatis menganalisis periode default)
+    displayNcrPeriods();
+}
+
+// --- FUNGSI PERIODE UNTUK WINCOR DENGAN FILTER DISPENSE ---
+function findWincorPeriods(logLines) {
+    const validPeriods = [];
+    const validCashCounterIndices = [];
+
+    // 1. Cari SEMUA baris "CASH COUNTERS AFTER SOP"
+    for (let i = 0; i < logLines.length; i++) {
+        if (logLines[i].includes('CASH COUNTERS AFTER SOP')) {
+            // 2. VALIDASI: Periksa apakah add cash-nya valid
+            const totalAddCash = parseWincorAddCashNewValidated(logLines, i);
+            
+            // 3. HANYA tambahkan jika VALID (2000, 4000, 6000, atau 8000)
+            if (totalAddCash > 0) {
+                validCashCounterIndices.push({ 
+                    index: i, 
+                    addCashValue: totalAddCash 
+                });
+            }
+        }
+    }
+
+    // 4. Buat periode dari indeks VALID yang berurutan
+    if (validCashCounterIndices.length >= 2) {
+        for (let i = 0; i < validCashCounterIndices.length - 1; i++) {
+            const startIdx = validCashCounterIndices[i].index;
+            const endIdx = validCashCounterIndices[i + 1].index;
+            
+            // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+            // Cek apakah ada transaksi dispense ("CASH\s+(\d+):") dalam periode ini
+            let hasDispense = false;
+            for (let j = startIdx + 1; j < endIdx; j++) {
+                if (logLines[j].match(/CASH\s+(\d+):(\d+),(\d+);/)) {
+                    hasDispense = true;
+                    break;
+                }
+            }
+            
+            // Hanya tambahkan periode jika ADA transaksi dispense
+            if (hasDispense) {
+                // Cari tanggal dalam rentang ini
+                const dates = findWincorDatesInRange(logLines, startIdx, endIdx);
+                
+                if (dates.length > 0) {
+                    // Konversi format tanggal ke dd/mm/yy
+                    const formattedDates = dates.map(date => {
+                        const [day, month, year] = date.split('/');
+                        return `${day}/${month}/${year.slice(-2)}`;
+                    });
+                    
+                    validPeriods.push({
+                        startIndex: startIdx,
+                        endIndex: endIdx,
+                        startDate: formattedDates[0],
+                        endDate: formattedDates[formattedDates.length - 1],
+                        displayText: `${formattedDates[0]} - ${formattedDates[formattedDates.length - 1]}`,
+                        addCashValue: validCashCounterIndices[i].addCashValue
+                    });
+                }
+            }
+        }
+        
+        // Tambahkan periode terakhir (dari CASH COUNTERS terakhir sampai akhir log)
+        if (validCashCounterIndices.length > 0) {
+            const lastIdx = validCashCounterIndices[validCashCounterIndices.length - 1].index;
+            
+            // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+            let hasDispense = false;
+            for (let j = lastIdx + 1; j < logLines.length; j++) {
+                if (logLines[j].match(/CASH\s+(\d+):(\d+),(\d+);/)) {
+                    hasDispense = true;
+                    break;
+                }
+            }
+            
+            // Hanya tambahkan periode jika ADA transaksi dispense
+            if (hasDispense) {
+                const dates = findWincorDatesInRange(logLines, lastIdx, logLines.length - 1);
+                if (dates.length > 0) {
+                    // Konversi format tanggal ke dd/mm/yy
+                    const formattedDates = dates.map(date => {
+                        const [day, month, year] = date.split('/');
+                        return `${day}/${month}/${year.slice(-2)}`;
+                    });
+                    
+                    validPeriods.push({
+                        startIndex: lastIdx,
+                        endIndex: logLines.length,
+                        startDate: formattedDates[0],
+                        endDate: formattedDates[formattedDates.length - 1],
+                        displayText: `${formattedDates[0]} - ${formattedDates[formattedDates.length - 1]}`,
+                        addCashValue: validCashCounterIndices[validCashCounterIndices.length - 1].addCashValue
+                    });
+                }
+            }
+        }
+    } else if (validCashCounterIndices.length === 1) {
+        // Hanya ada 1 periode valid
+        const startIdx = validCashCounterIndices[0].index;
+        
+        // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+        let hasDispense = false;
+        for (let j = startIdx + 1; j < logLines.length; j++) {
+            if (logLines[j].match(/CASH\s+(\d+):(\d+),(\d+);/)) {
+                hasDispense = true;
+                break;
+            }
+        }
+        
+        // Hanya tambahkan periode jika ADA transaksi dispense
+        if (hasDispense) {
+            const dates = findWincorDatesInRange(logLines, startIdx, logLines.length - 1);
+            if (dates.length > 0) {
+                // Konversi format tanggal ke dd/mm/yy
+                const formattedDates = dates.map(date => {
+                    const [day, month, year] = date.split('/');
+                    return `${day}/${month}/${year.slice(-2)}`;
+                });
+                
+                validPeriods.push({
+                    startIndex: startIdx,
+                    endIndex: logLines.length,
+                    startDate: formattedDates[0],
+                    endDate: formattedDates[formattedDates.length - 1],
+                    displayText: `${formattedDates[0]} - ${formattedDates[formattedDates.length - 1]}`,
+                    addCashValue: validCashCounterIndices[0].addCashValue
+                });
+            }
+        }
+    }
+
+    return validPeriods;
+}
+
+// Fungsi untuk normalisasi tanggal Wincor (2-digit year → 4-digit)
+function normalizeWincorDate(dateStr) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        let year = parts[2];
+        if (year.length === 2) {
+            year = '20' + year;
+        }
+        return `${parts[0]}/${parts[1]}/${year}`;
+    }
+    return dateStr;
+}
+
+// Fungsi untuk mencari tanggal setelah "CASH PRESENTED"
+function findDateAfterCashPresented(lines, startIndex) {
+    for (let i = startIndex + 1; i <= startIndex + 5 && i < lines.length; i++) {
+        const match = lines[i].match(/TANGGAL:\s*(\d{2}\/\d{2}\/\d{2})/);
+        if (match) {
+            const normalizedDate = normalizeWincorDate(match[1]);
+            // Konversi ke dd/mm/yy
+            const [day, month, year] = normalizedDate.split('/');
+            return `${day}/${month}/${year.slice(-2)}`;
+        }
+    }
+    return null;
+}
+
+// Fungsi untuk mencari tanggal dalam rentang tertentu
+function findWincorDatesInRange(lines, startIdx, endIdx) {
+    const dates = [];
+    for (let i = startIdx; i <= endIdx && i < lines.length; i++) {
+        if (lines[i].includes('CASH PRESENTED')) {
+            const date = findDateAfterCashPresented(lines, i);
+            if (date) {
+                dates.push(date);
+            }
+        }
+    }
+    return dates;
+}
+
+// Fungsi untuk menampilkan periode Wincor di UI
+function displayWincorPeriods() {
+    const periodDisplay = document.getElementById('wincorPeriodDisplay');
+    if (!periodDisplay) return;
+    
+    periodDisplay.innerHTML = '';
+    periodDisplay.classList.remove('hidden');
+    
+    if (wincorPeriods.length === 0) {
+        periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode VALID dengan transaksi dispense</span>';
+        return;
     }
     
+    // Tentukan periode default
+    let defaultPeriodIndex = wincorPeriods.length - 1;
+    if (wincorPeriods.length > 1) {
+        const lastPeriod = wincorPeriods[wincorPeriods.length - 1];
+        // Jika periode terakhir adalah "sekarang" (tidak dibatasi oleh add cash)
+        if (lastPeriod.displayText.includes('Sekarang') || !lastPeriod.endDate) {
+            // Cari periode terakhir yang memiliki endDate (periode yang sudah selesai)
+            for (let i = wincorPeriods.length - 2; i >= 0; i--) {
+                if (wincorPeriods[i].endDate) {
+                    defaultPeriodIndex = i;
+                    break;
+                }
+            }
+        } else {
+            defaultPeriodIndex = wincorPeriods.length - 1;
+        }
+    }
+    
+    // Buat tombol untuk setiap periode VALID
+    wincorPeriods.forEach((period, index) => {
+        const button = document.createElement('button');
+        button.textContent = period.displayText;
+        button.className = 'period-btn wincor';
+        
+        // Jika ini periode default, set sebagai active
+        if (index === defaultPeriodIndex) {
+            button.classList.add('active');
+            currentWincorPeriod = period;
+            updateWincorSelectedPeriodUI(period);
+        } else if (currentWincorPeriod && currentWincorPeriod.displayText === period.displayText) {
+            button.classList.add('active');
+        }
+        
+        button.addEventListener('click', () => {
+            // Update current period
+            currentWincorPeriod = period;
+            
+            // Update UI tombol
+            document.querySelectorAll('#wincorPeriodDisplay .period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Update selected period UI
+            updateWincorSelectedPeriodUI(period);
+            
+            // Analisis untuk periode ini
+            analyzeWincorPeriod(period);
+        });
+        
+        periodDisplay.appendChild(button);
+    });
+    
+    // Analisis untuk periode default
+    if (currentWincorPeriod) {
+        analyzeWincorPeriod(currentWincorPeriod);
+    }
+}
+
+// Fungsi untuk update UI periode terpilih
+function updateWincorSelectedPeriodUI(period) {
+    const selectedDiv = document.getElementById('wincorPeriodSelected');
+    const selectedText = document.getElementById('wincorSelectedPeriodText');
+    
+    if (selectedDiv && selectedText) {
+        selectedDiv.classList.remove('hidden');
+        selectedText.textContent = period.displayText;
+    }
+}
+
+// Fungsi untuk menganalisis periode Wincor tertentu
+function analyzeWincorPeriod(period) {
+    const logTextRaw = document.getElementById('wincorLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+
+    const atmID = findATM_ID(logText);
+    displayWincorATM_ID(atmID);
+
+    // Gunakan nilai add cash dari periode yang VALID
+    let totalAddCashAwal = 0;
+    if (period && period.addCashValue) {
+        totalAddCashAwal = period.addCashValue;
+    }
+
+    // CEK INPUT MANUAL ADD CASH
+    const manualAddCash = parseInt(document.getElementById('wincorAddCashManual').value);
+    if (!isNaN(manualAddCash) && manualAddCash > 0) {
+        totalAddCashAwal = manualAddCash;
+    }
+
+    displayWincorTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
+
+    // Tentukan rentang baris untuk analisis dispense berdasarkan periode
+    let startLineDispense = period ? period.startIndex + 1 : 0;
+    let endLineDispense = period ? period.endIndex - 1 : logLines.length - 1;
+
+    const cashLists = { 'wincorCash1': [], 'wincorCash2': [], 'wincorCash3': [], 'wincorCash4': [] };
+
     for (let i = startLineDispense; i <= endLineDispense; i++) {
         const match = logLines[i].match(/CASH\s+(\d+):(\d+),(\d+);/);
         if (match) {
             const [, cassetteNum, code, amount] = match;
             const cassNum = parseInt(cassetteNum);
             const dispAmount = parseInt(amount);
-            if (!isNaN(cassNum) && !isNaN(dispAmount) && cassNum >= 1 && cassNum <= 4) {
+            // Filter: hanya tambahkan jika nilainya > 0
+            if (!isNaN(cassNum) && !isNaN(dispAmount) && cassNum >= 1 && cassNum <= 4 && dispAmount > 0) {
                 cashLists[`wincorCash${cassNum}`].push(dispAmount);
             }
         }
     }
-    
+
+    // Tampilkan hasil dispense (dengan filter untuk nilai 0)
     for (const [cashType, list] of Object.entries(cashLists)) {
         displayWincorResult(list, cashType);
     }
-    
+
     const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
     document.getElementById('wincorTotalAmount').textContent = `${totalAmount.toLocaleString('id-ID')}`;
-    
+
     const totalRemaining = calculateTotalRemaining(totalAddCashAwal, totalAmount);
     displayWincorTotalRemaining(totalRemaining.toLocaleString('id-ID'));
 
@@ -1129,6 +1638,20 @@ function filterCash() {
     }
 }
 
+// Fungsi utama untuk filter Wincor
+function filterWincor() {
+    const logTextRaw = document.getElementById('wincorLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+
+    // Cari periode VALID (dengan validasi add cash) DENGAN FILTER DISPENSE
+    wincorPeriods = findWincorPeriods(logLines);
+
+    // Tampilkan periode VALID di UI (akan otomatis menganalisis periode default)
+    displayWincorPeriods();
+}
+
+// --- FUNGSI EXISTING UNTUK WINCOR ---
 function parseWincorAddCashNewValidated(logLines, startIndex) {
     let totalAddCash = 0;
     if (startIndex >= logLines.length) return 0;
@@ -1150,115 +1673,42 @@ function parseWincorAddCashNewValidated(logLines, startIndex) {
 function displayWincorATM_ID(atmID) { document.getElementById('wincorAtmId').textContent = `${atmID}`; }
 function displayWincorTotalAddCash(totalAddCash) { document.getElementById('wincorTotalAddCash').textContent = `${totalAddCash}`; }
 function displayWincorTotalRemaining(totalRemaining) { document.getElementById('wincorTotalRemaining').textContent = `${totalRemaining}`; }
+
+// UPGRADED: Fungsi display dengan filter untuk nilai 0
 function displayWincorResult(list, id) {
     const ul = document.getElementById(id);
     if (!ul) return;
     ul.innerHTML = '';
+    
+    // Filter: hanya tampilkan nilai > 0
+    const filteredList = list.filter(item => item > 0);
+    
     let totalAmount = 0;
-    list.forEach(item => {
+    filteredList.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item.toLocaleString('id-ID');
         li.classList.add('py-1', 'border-b', 'border-slate-700/50');
         ul.appendChild(li);
         totalAmount += item;
     });
-    const totalLi = document.createElement('li');
-    totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
-    totalLi.style.fontWeight = 'bold';
-    totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
-    ul.insertBefore(totalLi, ul.firstChild);
+    
+    // Hanya tampilkan total jika ada data
+    if (filteredList.length > 0) {
+        const totalLi = document.createElement('li');
+        totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
+        totalLi.style.fontWeight = 'bold';
+        totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
+        ul.insertBefore(totalLi, ul.firstChild);
+    }
 }
+
 function calculateTotalRemaining(totalAddCash, totalAmount) { return totalAddCash - totalAmount; }
 function findATM_ID(logText) {
     const match = logText.match(/ATM ID\s*:\s*(\d+)/);
     return match ? match[1] : "Not Found";
 }
 
-// HYOSUNG LOGIC (TIDAK DIUBAH)
-function filterHyosung() {
-    const logTextRaw = document.getElementById('hyosungLogInput').value;
-    const logText = cleanAnsiCodes(logTextRaw);
-    const cashLists = { 'hyosungCash1': [], 'hyosungCash2': [], 'hyosungCash3': [], 'hyosungCash4': [] };
-    const logLines = logText.split('\n');
-    const atmID = findHyosungATM_ID(logText);
-    displayHyosungATM_ID(atmID);
-    
-    let lastAddCashIndex = -1;
-    let lastAddCashValue = 0;
-    for (let i = logLines.length - 1; i >= 0; i--) {
-        if (logLines[i].includes('ADD CASH:')) {
-            const value = parseHyosungAddCashNew(logLines, i);
-            if (value > 0) { 
-                lastAddCashIndex = i;
-                lastAddCashValue = value;
-                break; 
-            }
-        }
-    }
-    
-    let secondLastAddCashIndex = -1;
-    let secondLastAddCashValue = 0;
-    for (let i = lastAddCashIndex - 1; i >= 0; i--) {
-        if (logLines[i].includes('ADD CASH:')) {
-            const value = parseHyosungAddCashNew(logLines, i);
-            if (value > 0) { 
-                secondLastAddCashIndex = i;
-                secondLastAddCashValue = value;
-                break; 
-            }
-        }
-    }
-    
-    // CEK INPUT MANUAL ADD CASH
-    const manualAddCash = parseInt(document.getElementById('hyosungAddCashManual').value);
-    let totalAddCashAwal;
-    
-    if (!isNaN(manualAddCash) && manualAddCash > 0) {
-        totalAddCashAwal = manualAddCash;
-    } else {
-        totalAddCashAwal = secondLastAddCashIndex !== -1 ? secondLastAddCashValue : lastAddCashValue;
-    }
-    
-    displayHyosungTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
-    
-    // PERIODE ANALISIS
-    let startLineDispense = 0;
-    let endLineDispense = logLines.length - 1;
-    if (secondLastAddCashIndex !== -1) {
-        startLineDispense = secondLastAddCashIndex + 1;
-        endLineDispense = lastAddCashIndex - 1;
-    } else if (lastAddCashIndex !== -1) {
-        startLineDispense = lastAddCashIndex + 1;
-    }
-    
-    for (let i = startLineDispense; i <= endLineDispense; i++) {
-        const match = logLines[i].match(/Request Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
-        if (match) {
-            const [, disp1, disp2, disp3, disp4] = match;
-            cashLists['hyosungCash1'].push(parseInt(disp1));
-            cashLists['hyosungCash2'].push(parseInt(disp2));
-            cashLists['hyosungCash3'].push(parseInt(disp3));
-            cashLists['hyosungCash4'].push(parseInt(disp4));
-        }
-    }
-    
-    for (const [cashType, list] of Object.entries(cashLists)) {
-        displayHyosungResult(list, cashType);
-    }
-    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
-    document.getElementById('hyosungTotalAmount').textContent = `${totalAmount.toLocaleString('id-ID')}`;
-    
-    const totalRemaining = calculateTotalRemaining(totalAddCashAwal, totalAmount);
-    displayHyosungTotalRemaining(totalRemaining.toLocaleString('id-ID'));
-
-    const physInput = document.getElementById('hyosungPhysInput');
-    if (physInput.value !== "") {
-        const physVal = parseInt(physInput.value) || 0;
-        document.getElementById('hyosungDisplayPhys').textContent = physVal.toLocaleString('id-ID');
-        updateReconciliationUI(physVal, totalRemaining, "hyosungReconBox", "hyosungReconResult", "hyosungExpression");
-    }
-}
-
+// --- FUNGSI EXISTING UNTUK HYOSUNG ---
 function parseHyosungAddCashNew(logLines, startIndex) {
     let totalAddCash = 0;
     if (startIndex >= logLines.length) return 0;
@@ -1280,33 +1730,45 @@ function parseHyosungAddCashNew(logLines, startIndex) {
     totalAddCash = cstValues.reduce((sum, val) => sum + val, 0);
     return totalAddCash;
 }
+
+// UPGRADED: Fungsi display dengan filter untuk nilai 0
 function displayHyosungResult(list, id) {
     const ul = document.getElementById(id);
     if (!ul) return;
     ul.innerHTML = '';
+    
+    // Filter: hanya tampilkan nilai > 0
+    const filteredList = list.filter(item => item > 0);
+    
     let totalAmount = 0;
-    list.forEach(item => {
+    filteredList.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item.toLocaleString('id-ID');
         li.classList.add('py-1', 'border-b', 'border-slate-700/50');
         ul.appendChild(li);
         totalAmount += item;
     });
-    const totalLi = document.createElement('li');
-    totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
-    totalLi.style.fontWeight = 'bold';
-    totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
-    ul.insertBefore(totalLi, ul.firstChild);
+    
+    // Hanya tampilkan total jika ada data
+    if (filteredList.length > 0) {
+        const totalLi = document.createElement('li');
+        totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
+        totalLi.style.fontWeight = 'bold';
+        totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
+        ul.insertBefore(totalLi, ul.firstChild);
+    }
 }
+
 function findHyosungATM_ID(logText) {
     const match = logText.match(/Terminal Id\s*:\s*(\d+)/);
     return match ? match[1] : "Not Found";
 }
+
 function displayHyosungATM_ID(atmID) { document.getElementById('hyosungAtmId').textContent = `${atmID}`; }
 function displayHyosungTotalAddCash(totalAddCash) { document.getElementById('hyosungTotalAddCash').textContent = `${totalAddCash}`; }
 function displayHyosungTotalRemaining(totalRemaining) { document.getElementById('hyosungTotalRemaining').textContent = `${totalRemaining}`; }
 
-// NCR LOGIC (TIDAK DIUBAH)
+// --- FUNGSI EXISTING UNTUK NCR ---
 function parseNcrCashAddedNew(logLines, startIndex) {
     let totalAddCash = 0;
     if (startIndex >= logLines.length) return 0;
@@ -1336,137 +1798,183 @@ function parseNcrCashAddedNew(logLines, startIndex) {
     }
 }
 
-function filterNcr() {
-    const logTextRaw = document.getElementById('ncrLogInput').value;
-    const logText = cleanAnsiCodes(logTextRaw);
-    const cashLists = { 'ncrCash1': [], 'ncrCash2': [], 'ncrCash3': [], 'ncrCash4': [] };
-    const logLines = logText.split('\n');
-    const atmID = findNcrATM_ID(logText);
-    displayNcrATM_ID(atmID);
-    
-    let lastCashAddedIndex = -1;
-    let lastCashAddedValue = 0;
-    for (let i = logLines.length - 1; i >= 0; i--) {
-        if (logLines[i].includes('CASH ADDED')) { 
-            const value = parseNcrCashAddedNew(logLines, i); 
-            if (value > 0) { 
-                lastCashAddedIndex = i;
-                lastCashAddedValue = value;
-                break; 
-            }
-        }
-    }
-    
-    let secondLastCashAddedIndex = -1;
-    let secondLastCashAddedValue = 0;
-    for (let i = lastCashAddedIndex - 1; i >= 0; i--) {
-        if (logLines[i].includes('CASH ADDED')) { 
-            const value = parseNcrCashAddedNew(logLines, i); 
-            if (value > 0) { 
-                secondLastCashAddedIndex = i;
-                secondLastCashAddedValue = value;
-                break; 
-            }
-        }
-    }
-    
-    // CEK INPUT MANUAL ADD CASH
-    const manualAddCash = parseInt(document.getElementById('ncrAddCashManual').value);
-    let totalAddCashAwal;
-    
-    if (!isNaN(manualAddCash) && manualAddCash > 0) {
-        totalAddCashAwal = manualAddCash;
-    } else {
-        totalAddCashAwal = secondLastCashAddedIndex !== -1 ? secondLastCashAddedValue : lastCashAddedValue;
-    }
-    
-    displayNcrTotalAddCash(totalAddCashAwal.toLocaleString('id-ID'));
-    
-    // PERIODE ANALISIS
-    let startLineDispense = 0;
-    let endLineDispense = logLines.length - 1;
-    if (secondLastCashAddedIndex !== -1) {
-        startLineDispense = secondLastCashAddedIndex + 1;
-        endLineDispense = lastCashAddedIndex - 1;
-    } else if (lastCashAddedIndex !== -1) {
-        startLineDispense = lastCashAddedIndex + 1;
-    }
-    
-    for (let i = startLineDispense; i <= endLineDispense; i++) {
-        const match = logLines[i].match(/NOTES PRESENTED\s+(\d+),(\d+),(\d+),(\d+)/);
-        if (match) {
-            const [, disp1, disp2, disp3, disp4] = match;
-            cashLists['ncrCash1'].push(parseInt(disp1));
-            cashLists['ncrCash2'].push(parseInt(disp2));
-            cashLists['ncrCash3'].push(parseInt(disp3));
-            cashLists['ncrCash4'].push(parseInt(disp4));
-        }
-    }
-    
-    for (const [cashType, list] of Object.entries(cashLists)) {
-        displayNcrResult(list, cashType);
-    }
-    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
-    document.getElementById('ncrTotalAmount').textContent = `${totalAmount.toLocaleString('id-ID')}`;
-    
-    const totalRemaining = calculateTotalRemaining(totalAddCashAwal, totalAmount);
-    displayNcrTotalRemaining(totalRemaining.toLocaleString('id-ID'));
-
-    const physInput = document.getElementById('ncrPhysInput');
-    if (physInput.value !== "") {
-        const physVal = parseInt(physInput.value) || 0;
-        document.getElementById('ncrDisplayPhys').textContent = physVal.toLocaleString('id-ID');
-        updateReconciliationUI(physVal, totalRemaining, "ncrReconBox", "ncrReconResult", "ncrExpression");
-    }
-}
+// UPGRADED: Fungsi display dengan filter untuk nilai 0
 function displayNcrResult(list, id) {
     const ul = document.getElementById(id);
     if (!ul) return;
     ul.innerHTML = '';
+    
+    // Filter: hanya tampilkan nilai > 0
+    const filteredList = list.filter(item => item > 0);
+    
     let totalAmount = 0;
-    list.forEach(item => {
+    filteredList.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item.toLocaleString('id-ID');
         li.classList.add('py-1', 'border-b', 'border-slate-700/50');
         ul.appendChild(li);
         totalAmount += item;
     });
-    const totalLi = document.createElement('li');
-    totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
-    totalLi.style.fontWeight = 'bold';
-    totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
-    ul.insertBefore(totalLi, ul.firstChild);
+    
+    // Hanya tampilkan total jika ada data
+    if (filteredList.length > 0) {
+        const totalLi = document.createElement('li');
+        totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
+        totalLi.style.fontWeight = 'bold';
+        totalLi.classList.add('text-accent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
+        ul.insertBefore(totalLi, ul.firstChild);
+    }
 }
+
 function findNcrATM_ID(logText) {
     const match = logText.match(/MACHINE NO:\s*(\d+)/);
     return match ? match[1] : "Not Found";
 }
+
 function displayNcrATM_ID(atmID) { document.getElementById('ncrAtmId').textContent = `${atmID}`; }
 function displayNcrTotalAddCash(totalAddCash) { document.getElementById('ncrTotalAddCash').textContent = `${totalAddCash}`; }
 function displayNcrTotalRemaining(totalRemaining) { document.getElementById('ncrTotalRemaining').textContent = `${totalRemaining}`; }
 
-// --- JALIN SPECIFIC LOGIC ---
+// --- JALIN SPECIFIC LOGIC DENGAN FILTER DISPENSE ---
 
 // Fungsi untuk mencari TID (Terminal ID)
 function findJalinTID(logText) {
-    // Mencari baris yang mengandung "TID=xxxx" (contoh: T0203024|0|002|0000-00-00 00:00:00|2025-08-27 13:13:38|TID=T0203024)
     const match = logText.match(/TID=(\w+)/);
     return match ? match[1] : "Not Found";
 }
 
-// Fungsi untuk mencari periode analisis (add cash) berdasarkan keyword "Printing 'PRT_SHOW_CASSETTES.xml'"
+// Fungsi untuk mencari periode analisis Jalin DENGAN FILTER DISPENSE
 function findJalinAddCashPeriods(logLines) {
     const periods = [];
+    const printLines = [];
     
-    // Cari dari bawah ke atas (bottom-up)
-    for (let i = logLines.length - 1; i >= 0; i--) {
+    // Cari semua baris yang mengandung "Printing 'PRT_SHOW_CASSETTES.xml'"
+    for (let i = 0; i < logLines.length; i++) {
         if (logLines[i].includes("Printing 'PRT_SHOW_CASSETTES.xml'")) {
-            periods.push(i);
-            if (periods.length === 2) break; // Kita butuh 2 periode
+            // Ambil tanggal dari kolom ke-5 (indeks 4) setelah split dengan '|'
+            const parts = logLines[i].split('|');
+            if (parts.length >= 5) {
+                const dateTime = parts[4].trim();
+                // dateTime format: "2025-08-22 13:13:38"
+                const datePart = dateTime.split(' ')[0];
+                // Ubah format dari "2025-08-22" menjadi "22/08/25" (dd/mm/yy)
+                const [year, month, day] = datePart.split('-');
+                const formattedDate = `${day}/${month}/${year.slice(-2)}`;
+                printLines.push({ index: i, date: formattedDate });
+            }
+        }
+    }
+    
+    // Buat periode dari setiap dua baris berurutan
+    for (let i = 0; i < printLines.length - 1; i++) {
+        const startIdx = printLines[i].index;
+        const endIdx = printLines[i + 1].index;
+        
+        // === TAMBAHAN: FILTER BERDASARKAN DISPENSE ===
+        // Cek apakah ada transaksi dispense ("DISPENSED:") dalam periode ini
+        let hasDispense = false;
+        for (let j = startIdx + 1; j < endIdx; j++) {
+            if (logLines[j].includes('DISPENSED:')) {
+                hasDispense = true;
+                break;
+            }
+        }
+        
+        // Hanya tambahkan periode jika ADA transaksi dispense
+        if (hasDispense) {
+            periods.push({
+                startIndex: printLines[i].index,
+                endIndex: printLines[i + 1].index,
+                startDate: printLines[i].date,
+                endDate: printLines[i + 1].date,
+                displayText: `${printLines[i].date} - ${printLines[i + 1].date}`
+            });
         }
     }
     
     return periods;
+}
+
+// Fungsi untuk menampilkan periode Jalin di UI
+function displayJalinPeriods() {
+    const periodDisplay = document.getElementById('jalinPeriodDisplay');
+    if (!periodDisplay) return;
+    
+    periodDisplay.innerHTML = '';
+    periodDisplay.classList.remove('hidden');
+    
+    if (jalinPeriods.length === 0) {
+        periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode dengan transaksi dispense</span>';
+        return;
+    }
+    
+    // Tentukan periode default
+    let defaultPeriodIndex = jalinPeriods.length - 1;
+    if (jalinPeriods.length > 1) {
+        const lastPeriod = jalinPeriods[jalinPeriods.length - 1];
+        // Jika periode terakhir adalah "sekarang" (tidak dibatasi oleh add cash)
+        if (lastPeriod.displayText.includes('Sekarang') || !lastPeriod.endDate) {
+            // Cari periode terakhir yang memiliki endDate (periode yang sudah selesai)
+            for (let i = jalinPeriods.length - 2; i >= 0; i--) {
+                if (jalinPeriods[i].endDate) {
+                    defaultPeriodIndex = i;
+                    break;
+                }
+            }
+        } else {
+            defaultPeriodIndex = jalinPeriods.length - 1;
+        }
+    }
+    
+    // Buat tombol untuk setiap periode
+    jalinPeriods.forEach((period, index) => {
+        const button = document.createElement('button');
+        button.textContent = period.displayText;
+        button.className = 'period-btn jalin';
+        
+        // Jika ini periode default, set sebagai active
+        if (index === defaultPeriodIndex) {
+            button.classList.add('active');
+            currentJalinPeriod = period;
+            updateJalinSelectedPeriodUI(period);
+        } else if (currentJalinPeriod && currentJalinPeriod.displayText === period.displayText) {
+            button.classList.add('active');
+        }
+        
+        button.addEventListener('click', () => {
+            // Update current period
+            currentJalinPeriod = period;
+            
+            // Update UI tombol
+            document.querySelectorAll('#jalinPeriodDisplay .period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Update selected period UI
+            updateJalinSelectedPeriodUI(period);
+            
+            // Analisis untuk periode ini
+            analyzeJalinPeriod(period);
+        });
+        
+        periodDisplay.appendChild(button);
+    });
+    
+    // Analisis untuk periode default
+    if (currentJalinPeriod) {
+        analyzeJalinPeriod(currentJalinPeriod);
+    }
+}
+
+function updateJalinSelectedPeriodUI(period) {
+    const selectedDiv = document.getElementById('jalinPeriodSelected');
+    const selectedText = document.getElementById('jalinSelectedPeriodText');
+    
+    if (selectedDiv && selectedText) {
+        selectedDiv.classList.remove('hidden');
+        selectedText.textContent = period.displayText;
+    }
 }
 
 // Fungsi untuk parsing nilai add cash dari periode yang ditemukan
@@ -1517,7 +2025,7 @@ function parseJalinAddCash(logLines, periodIndex) {
     return { totalAddCash, foundValid };
 }
 
-// Fungsi untuk mencari dan memproses data dispense
+// Fungsi untuk mencari dan memproses data dispense Jalin
 function findJalinDispenseData(logLines, startIndex, endIndex) {
     const cashLists = { 
         'jalinCash1': [], 
@@ -1531,41 +2039,30 @@ function findJalinDispenseData(logLines, startIndex, endIndex) {
         
         // Cari baris "DISPENSED:"
         if (line.includes('DISPENSED:')) {
-            // Format: "DISPENSED: 0 x 0,00 , 0 x 50.000,00 IDR, 6 x 50.000,00 IDR, 0 x 50.000,00 IDR, 0 x 50.000,00 IDR"
-            // Kita ambil 4 ruas setelah ruas pertama yang diabaikan
-            // Ruas 2: 0 x 50.000,00 IDR -> kaset 1
-            // Ruas 3: 6 x 50.000,00 IDR -> kaset 2
-            // Ruas 4: 0 x 50.000,00 IDR -> kaset 3
-            // Ruas 5: 0 x 50.000,00 IDR -> kaset 4
-            
-            // Pattern untuk menangkap 4 kelompok setelah ruas pertama
             const dispensePattern = /DISPENSED:\s*\d+\s*x\s*[\d.,]+\s*,?\s*(\d+)\s*x\s*[\d.,]+\s*IDR,?\s*(\d+)\s*x\s*[\d.,]+\s*IDR,?\s*(\d+)\s*x\s*[\d.,]+\s*IDR,?\s*(\d+)\s*x\s*[\d.,]+\s*IDR/;
             const match = line.match(dispensePattern);
             
             if (match) {
-                // Ambil nilai untuk setiap kaset (angka pertama di setiap ruas)
-                // Kaset 1: match[1], Kaset 2: match[2], Kaset 3: match[3], Kaset 4: match[4]
                 const disp1 = parseInt(match[1]);
                 const disp2 = parseInt(match[2]);
                 const disp3 = parseInt(match[3]);
                 const disp4 = parseInt(match[4]);
                 
-                // Tambahkan ke daftar yang sesuai
+                // Filter: hanya tambahkan jika nilainya > 0
                 if (disp1 > 0) cashLists['jalinCash1'].push(disp1);
                 if (disp2 > 0) cashLists['jalinCash2'].push(disp2);
                 if (disp3 > 0) cashLists['jalinCash3'].push(disp3);
                 if (disp4 > 0) cashLists['jalinCash4'].push(disp4);
             } else {
-                // Alternatif: jika regex tidak match, coba dengan split
-                console.log("Regex tidak match, mencoba alternatif parsing...");
+                // Alternatif parsing
                 const parts = line.split('DISPENSED:')[1].split(',');
                 if (parts.length >= 5) {
-                    // Abaikan bagian pertama (0 x 0,00), ambil 4 bagian berikutnya
                     for (let j = 1; j <= 4; j++) {
                         const part = parts[j].trim();
                         const amountMatch = part.match(/(\d+)\s*x\s*[\d.,]+\s*IDR/);
                         if (amountMatch) {
                             const amount = parseInt(amountMatch[1]);
+                            // Filter: hanya tambahkan jika nilainya > 0
                             if (amount > 0) {
                                 cashLists[`jalinCash${j}`].push(amount);
                             }
@@ -1579,13 +2076,17 @@ function findJalinDispenseData(logLines, startIndex, endIndex) {
     return cashLists;
 }
 
-// Fungsi untuk menampilkan hasil dispense ke UI
+// UPGRADED: Fungsi untuk menampilkan hasil dispense Jalin ke UI (dengan filter nilai 0)
 function displayJalinResult(list, id) {
     const ul = document.getElementById(id);
     if (!ul) return;
     ul.innerHTML = '';
+    
+    // Filter: hanya tampilkan nilai > 0
+    const filteredList = list.filter(item => item > 0);
+    
     let totalAmount = 0;
-    list.forEach(item => {
+    filteredList.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item.toLocaleString('id-ID');
         li.classList.add('py-1', 'border-b', 'border-slate-700/50');
@@ -1593,12 +2094,74 @@ function displayJalinResult(list, id) {
         totalAmount += item;
     });
     
-    if (list.length > 0) {
+    // Hanya tampilkan total jika ada data
+    if (filteredList.length > 0) {
         const totalLi = document.createElement('li');
         totalLi.textContent = `Total: ${totalAmount.toLocaleString('id-ID')}`;
         totalLi.style.fontWeight = 'bold';
         totalLi.classList.add('text-jalinAccent', 'border-b', 'border-slate-700', 'pb-2', 'mb-2', 'pt-2');
         ul.insertBefore(totalLi, ul.firstChild);
+    }
+}
+
+// Fungsi untuk menganalisis periode Jalin tertentu
+function analyzeJalinPeriod(period) {
+    const logTextRaw = document.getElementById('jalinLogInput').value;
+    const logText = cleanAnsiCodes(logTextRaw);
+    const logLines = logText.split('\n');
+    
+    if (!logText || logText.length < 50) {
+        alert('Log kosong atau terlalu pendek. Harap upload log terlebih dahulu.');
+        return;
+    }
+    
+    // Cari TID
+    const tid = findJalinTID(logText);
+    document.getElementById('jalinTid').textContent = tid;
+    
+    // Tentukan indeks periode
+    let startLineDispense = period ? period.startIndex + 1 : 0;
+    let endLineDispense = period ? period.endIndex - 1 : logLines.length - 1;
+    
+    // Cari nilai add cash untuk periode ini
+    let totalAddCashAwal = 0;
+    if (period) {
+        const addCashResult = parseJalinAddCash(logLines, period.startIndex);
+        if (addCashResult.foundValid) {
+            totalAddCashAwal = addCashResult.totalAddCash;
+        }
+    }
+    
+    // CEK INPUT MANUAL ADD CASH
+    const manualAddCash = parseInt(document.getElementById('jalinAddCashManual').value);
+    if (!isNaN(manualAddCash) && manualAddCash > 0) {
+        totalAddCashAwal = manualAddCash;
+    }
+    
+    document.getElementById('jalinTotalAddCash').textContent = totalAddCashAwal.toLocaleString('id-ID');
+    
+    // Ekstrak data dispense untuk periode ini
+    const cashLists = findJalinDispenseData(logLines, startLineDispense, endLineDispense);
+    
+    // Tampilkan hasil dispense (dengan filter untuk nilai 0)
+    for (const [cashType, list] of Object.entries(cashLists)) {
+        displayJalinResult(list, cashType);
+    }
+    
+    // Hitung total dispense
+    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
+    document.getElementById('jalinTotalAmount').textContent = totalAmount.toLocaleString('id-ID');
+    
+    // Hitung total remaining
+    const totalRemaining = totalAddCashAwal - totalAmount;
+    document.getElementById('jalinTotalRemaining').textContent = totalRemaining.toLocaleString('id-ID');
+    
+    // Tampilkan hasil rekonsiliasi
+    const physInput = document.getElementById('jalinPhysInput');
+    if (physInput.value !== "") {
+        const physVal = parseInt(physInput.value) || 0;
+        document.getElementById('jalinDisplayPhys').textContent = physVal.toLocaleString('id-ID');
+        updateReconciliationUI(physVal, totalRemaining, "jalinReconBox", "jalinReconResult", "jalinExpression");
     }
 }
 
@@ -1613,78 +2176,13 @@ function filterJalin() {
         return;
     }
     
-    // 1. Cari TID
+    // Cari TID
     const tid = findJalinTID(logText);
     document.getElementById('jalinTid').textContent = tid;
     
-    // 2. Cari periode analisis (add cash)
-    const periods = findJalinAddCashPeriods(logLines);
+    // Cari periode analisis DENGAN FILTER DISPENSE
+    jalinPeriods = findJalinAddCashPeriods(logLines);
     
-    let lastAddCashIndex = -1;
-    let lastAddCashValue = 0;
-    let secondLastAddCashIndex = -1;
-    let secondLastAddCashValue = 0;
-    
-    if (periods.length >= 1) {
-        const lastPeriodResult = parseJalinAddCash(logLines, periods[0]);
-        if (lastPeriodResult.foundValid) {
-            lastAddCashIndex = periods[0];
-            lastAddCashValue = lastPeriodResult.totalAddCash;
-        }
-    }
-    
-    if (periods.length >= 2) {
-        const secondLastPeriodResult = parseJalinAddCash(logLines, periods[1]);
-        if (secondLastPeriodResult.foundValid) {
-            secondLastAddCashIndex = periods[1];
-            secondLastAddCashValue = secondLastPeriodResult.totalAddCash;
-        }
-    }
-    
-    // 3. Tentukan nilai add cash awal
-    const manualAddCash = parseInt(document.getElementById('jalinAddCashManual').value);
-    let totalAddCashAwal;
-    
-    if (!isNaN(manualAddCash) && manualAddCash > 0) {
-        totalAddCashAwal = manualAddCash;
-    } else {
-        totalAddCashAwal = secondLastAddCashIndex !== -1 ? secondLastAddCashValue : lastAddCashValue;
-    }
-    
-    document.getElementById('jalinTotalAddCash').textContent = totalAddCashAwal.toLocaleString('id-ID');
-    
-    // 4. Tentukan periode dispense
-    let startLineDispense = 0;
-    let endLineDispense = logLines.length - 1;
-    
-    if (secondLastAddCashIndex !== -1 && lastAddCashIndex !== -1) {
-        startLineDispense = secondLastAddCashIndex + 1;
-        endLineDispense = lastAddCashIndex - 1;
-    } else if (lastAddCashIndex !== -1) {
-        startLineDispense = lastAddCashIndex + 1;
-    }
-    
-    // 5. Ekstrak data dispense
-    const cashLists = findJalinDispenseData(logLines, startLineDispense, endLineDispense);
-    
-    // 6. Tampilkan hasil dispense
-    for (const [cashType, list] of Object.entries(cashLists)) {
-        displayJalinResult(list, cashType);
-    }
-    
-    // 7. Hitung total dispense
-    const totalAmount = Object.values(cashLists).flat().reduce((acc, val) => acc + val, 0);
-    document.getElementById('jalinTotalAmount').textContent = totalAmount.toLocaleString('id-ID');
-    
-    // 8. Hitung total remaining
-    const totalRemaining = totalAddCashAwal - totalAmount;
-    document.getElementById('jalinTotalRemaining').textContent = totalRemaining.toLocaleString('id-ID');
-    
-    // 9. Tampilkan hasil rekonsiliasi
-    const physInput = document.getElementById('jalinPhysInput');
-    if (physInput.value !== "") {
-        const physVal = parseInt(physInput.value) || 0;
-        document.getElementById('jalinDisplayPhys').textContent = physVal.toLocaleString('id-ID');
-        updateReconciliationUI(physVal, totalRemaining, "jalinReconBox", "jalinReconResult", "jalinExpression");
-    }
+    // Tampilkan periode di UI (akan otomatis menganalisis periode default)
+    displayJalinPeriods();
 }
