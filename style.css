@@ -1075,3 +1075,43 @@ body::before {
 .summary-daily-row.has-replenish {
     box-shadow: inset 3px 0 0 0 #14b8a6;
 }
+
+
+/* --- FIX SCROLLBAR TEBAL / PUTIH PADA LOG CONTAINER & ALL ELEMENTS --- */
+
+*::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+pre::-webkit-scrollbar,
+div::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+*::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track,
+pre::-webkit-scrollbar-track,
+div::-webkit-scrollbar-track {
+  background: #0f172a !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb,
+pre::-webkit-scrollbar-thumb,
+div::-webkit-scrollbar-thumb {
+  background: #334155 !important;
+  border-radius: 4px !important;
+  border: 1px solid #0f172a !important;
+}
+
+*::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover,
+pre::-webkit-scrollbar-thumb:hover,
+div::-webkit-scrollbar-thumb:hover {
+  background: #475569 !important;
+}
+
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #334155 #0f172a !important;
+}
