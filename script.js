@@ -3117,10 +3117,18 @@ function summaryExtractOky(lines) {
 // FIX Poin 2 (ATM): Hyosung punya field "Denomination" eksplisit di log - itu kebenaran
 // denominasi mesin. Nominal SEKARANG = total lembar x denom mesin (bukan lagi asumsi
 // split gaya CRM (c1+c2)*100000+(c3+c4)*50000 yang keliru utk mesin dgn 1 denom fisik).
+// ---------- HYOSUNG ----------
+// FIX (poin krusial dari user): sebelumnya denominasi mesin diambil dari field
+// "Denomination [d1,d2,d3,d4]" apa adanya (detectHyosungDenom) - riskan kalau field itu
+// tidak representatif/konsisten. Disamakan sekarang dengan pola Wincor & NCR yang sudah
+// benar: denominasi diturunkan dari transaksi dispense VALID PERTAMA (field "Amount [...]"
+// asli di blok [Transaction record] yg sama dengan Request Count ÷ lembar keluar), lalu
+// dipakai konsisten (lembar x denom) ke SEMUA transaksi - bukan lagi bergantung ke field
+// Denomination yang bisa saja tidak akurat/tidak ditemukan.
 function summaryExtractHyosung(lines) {
     const transactions = [];
     const rplMarkers = [];
-    const machineDenom = detectHyosungDenom(lines);
+    let machineDenom = null;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -3129,11 +3137,8 @@ function summaryExtractHyosung(lines) {
             if (dm) {
                 const ts = buildDateFromParts(dm[1], dm[2], dm[3], dm[4], dm[5], dm[6]);
                 if (ts) {
-                    // FIX (koreksi arahan): Saldo di grafik DIRESET ke nilai add-cash SUNGGUHAN
-                    // (lembar isi ulang x denom mesin), bukan ke 0 - reuse fungsi parsing
-                    // add-cash yg sudah tervalidasi di logic rekonsiliasi utama (read-only).
                     const addCashLembar = parseHyosungAddCashNew(lines, i);
-                    rplMarkers.push({ ts, label: 'REPLENISH', resetAmount: addCashLembar > 0 ? addCashLembar * machineDenom : null });
+                    rplMarkers.push({ ts, label: 'REPLENISH', _addCashLembar: addCashLembar });
                 }
             }
         }
@@ -3146,17 +3151,39 @@ function summaryExtractHyosung(lines) {
             if (m) {
                 const c1 = parseInt(m[1], 10), c2 = parseInt(m[2], 10), c3 = parseInt(m[3], 10), c4 = parseInt(m[4], 10);
                 const lembar = c1 + c2 + c3 + c4;
-                const amount = lembar * machineDenom;
-                if (amount > 0) {
+                if (lembar > 0) {
                     const dm = extractDateTimeNearLine(lines, i, [-7], /(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/, 20);
                     if (dm) {
                         const ts = buildDateFromParts(dm[1], dm[2], dm[3], dm[4], dm[5], dm[6]);
-                        if (ts) transactions.push({ ts, type: 'dispense', amount, lembar });
+                        if (ts) {
+                            if (machineDenom === null) {
+                                // Field "Amount [xxxxxxxx]" ada di blok [Transaction record] yg
+                                // sama, beberapa baris sebelum "Request Count" (persis sebelum
+                                // "Denomination"). Nilainya Rupiah asli, bukan kode internal.
+                                for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
+                                    const am = lines[k].match(/^Amount\s*\[(\d+)\]/);
+                                    if (am) {
+                                        const realAmount = parseInt(am[1], 10);
+                                        if (realAmount > 0) machineDenom = (realAmount / lembar) >= 75000 ? 100000 : 50000;
+                                        break;
+                                    }
+                                }
+                            }
+                            transactions.push({ ts, type: 'dispense', amount: 0, lembar, _pendingDenom: true });
+                        }
                     }
                 }
             }
         }
     }
+    if (machineDenom === null) machineDenom = detectHyosungDenom(lines); // fallback lama, cuma kalau data amount asli tidak ketemu sama sekali
+    transactions.forEach(t => {
+        if (t._pendingDenom) { t.amount = t.lembar * machineDenom; delete t._pendingDenom; }
+    });
+    rplMarkers.forEach(mk => {
+        mk.resetAmount = mk._addCashLembar > 0 ? mk._addCashLembar * machineDenom : null;
+        delete mk._addCashLembar;
+    });
     return { transactions, rplMarkers, machineDenom };
 }
 
