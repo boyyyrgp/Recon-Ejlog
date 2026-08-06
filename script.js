@@ -1,4 +1,12 @@
 // Global variables to store period data
+// FIX (redesign visual - Tactical Alert HUD): default Chart.js app-wide supaya SEMUA
+// chart otomatis pakai font monospace (bukan Orbitron) utk label sumbu/angka sesuai
+// §4.1 spesifikasi desain - murni visual, tidak menyentuh kalkulasi/data chart apapun.
+if (typeof Chart !== 'undefined' && Chart.defaults) {
+    if (Chart.defaults.font) Chart.defaults.font.family = "'Share Tech Mono', monospace";
+    Chart.defaults.color = '#8B92A0';
+    Chart.defaults.borderColor = 'rgba(38, 43, 51, 0.6)';
+}
 let dataFilterCRMHitachi;
 let dataFilterCRMDinabold;
 let dataFilterCRMOky;
@@ -443,7 +451,7 @@ function copyListToClipboard(listId, btnElement) {
     if (!items) {
         const originalText = btnElement.textContent;
         btnElement.textContent = "EMPTY!";
-        btnElement.style.backgroundColor = "#ef4444";
+        btnElement.style.backgroundColor = "#FF2A3D";
         btnElement.style.color = "#fff";
         setTimeout(() => {
             btnElement.textContent = originalText;
@@ -456,8 +464,8 @@ function copyListToClipboard(listId, btnElement) {
     navigator.clipboard.writeText(items).then(() => {
         const originalText = btnElement.textContent;
         btnElement.textContent = "COPIED!";
-        btnElement.style.backgroundColor = "#10b981";
-        btnElement.style.borderColor = "#10b981";
+        btnElement.style.backgroundColor = "#39FF6A";
+        btnElement.style.borderColor = "#39FF6A";
         btnElement.style.color = "#fff";
         
         setTimeout(() => {
@@ -3499,7 +3507,7 @@ function aggregateSummaryData(transactions, rplMarkers, isTwoWay, roundUnit) {
     // bawah ini HANYA dipakai utk grafik "perjalanan saldo" - kolom dispAmount/depAmount di
     // dailyTable (dipakai tabel rekap harian In/Out) SAMA SEKALI TIDAK diubah oleh blok ini.
     const timeline = [];
-    transactions.forEach(t => timeline.push({ ts: t.ts, kind: 'trx', type: t.type, amount: t.amount }));
+    transactions.forEach(t => timeline.push({ ts: t.ts, kind: 'trx', type: t.type, amount: t.amount, lembar: t.lembar }));
     rplMarkers.forEach(m => {
         if (m.resetAmount !== null && m.resetAmount !== undefined) {
             timeline.push({ ts: m.ts, kind: 'rpl', resetAmount: m.resetAmount });
@@ -3549,6 +3557,7 @@ function aggregateSummaryData(transactions, rplMarkers, isTwoWay, roundUnit) {
             rplSplitByDate.set(dk, {
                 rplTs: m.ts, saldoBeforeRpl: null, saldoAfterRplStart: m.resetAmount,
                 dispBefore: 0, dispAfter: 0, depBefore: 0, depAfter: 0,
+                dispBeforeLembar: 0, dispAfterLembar: 0, depBeforeLembar: 0, depAfterLembar: 0,
             });
         });
         let runningSaldo2 = 0;
@@ -3563,8 +3572,14 @@ function aggregateSummaryData(transactions, rplMarkers, isTwoWay, roundUnit) {
             } else {
                 if (split) {
                     const isAfter = ev.ts >= split.rplTs;
-                    if (ev.type === 'dispense') { if (isAfter) split.dispAfter += ev.amount; else split.dispBefore += ev.amount; }
-                    else { if (isAfter) split.depAfter += ev.amount; else split.depBefore += ev.amount; }
+                    const evLembar = ev.lembar || 0;
+                    if (ev.type === 'dispense') {
+                        if (isAfter) { split.dispAfter += ev.amount; split.dispAfterLembar += evLembar; }
+                        else { split.dispBefore += ev.amount; split.dispBeforeLembar += evLembar; }
+                    } else {
+                        if (isAfter) { split.depAfter += ev.amount; split.depAfterLembar += evLembar; }
+                        else { split.depBefore += ev.amount; split.depBeforeLembar += evLembar; }
+                    }
                 }
                 if (isTwoWay) runningSaldo2 += (ev.type === 'deposit' ? ev.amount : -ev.amount);
                 else runningSaldo2 -= ev.amount;
@@ -3579,6 +3594,8 @@ function aggregateSummaryData(transactions, rplMarkers, isTwoWay, roundUnit) {
                 saldoAfterRplStart: split.saldoAfterRplStart,
                 dispBefore: split.dispBefore, dispAfter: split.dispAfter,
                 depBefore: split.depBefore, depAfter: split.depAfter,
+                dispBeforeLembar: split.dispBeforeLembar, dispAfterLembar: split.dispAfterLembar,
+                depBeforeLembar: split.depBeforeLembar, depAfterLembar: split.depAfterLembar,
             };
         }
     });
@@ -3723,13 +3740,13 @@ function aggregateSummaryData(transactions, rplMarkers, isTwoWay, roundUnit) {
 // ============================================================
 
 const SUMMARY_MACHINE_CONFIG = {
-    crm: { pageId: 'page-crm', textareaId: 'crmLogInput', label: 'CRM HITACHI', isTwoWay: true, color: '#f59e0b' },
-    dn: { pageId: 'page-crm-dinabold', textareaId: 'dnLogInput', label: 'CRM DINABOLD', isTwoWay: true, color: '#f59e0b' },
-    oky: { pageId: 'page-crm-oki', textareaId: 'okyLogInput', label: 'CRM OKI', isTwoWay: true, color: '#f59e0b' },
-    hyosung: { pageId: 'page-hyosung', textareaId: 'hyosungLogInput', label: 'ATM HYOSUNG', isTwoWay: false, color: '#3b82f6' },
-    wincor: { pageId: 'page-wincor', textareaId: 'wincorLogInput', label: 'ATM WINCOR', isTwoWay: false, color: '#06b6d4' },
-    ncr: { pageId: 'page-ncr', textareaId: 'ncrLogInput', label: 'ATM NCR', isTwoWay: false, color: '#8b5cf6' },
-    jalin: { pageId: 'page-jalin', textareaId: 'jalinLogInput', label: 'ATM JALIN', isTwoWay: false, color: '#ef4444' },
+    crm: { pageId: 'page-crm', textareaId: 'crmLogInput', label: 'CRM HITACHI', isTwoWay: true, color: '#FF7A29' },
+    dn: { pageId: 'page-crm-dinabold', textareaId: 'dnLogInput', label: 'CRM DINABOLD', isTwoWay: true, color: '#FF7A29' },
+    oky: { pageId: 'page-crm-oki', textareaId: 'okyLogInput', label: 'CRM OKI', isTwoWay: true, color: '#FF7A29' },
+    hyosung: { pageId: 'page-hyosung', textareaId: 'hyosungLogInput', label: 'ATM HYOSUNG', isTwoWay: false, color: '#2E8EFF' },
+    wincor: { pageId: 'page-wincor', textareaId: 'wincorLogInput', label: 'ATM WINCOR', isTwoWay: false, color: '#2E8EFF' },
+    ncr: { pageId: 'page-ncr', textareaId: 'ncrLogInput', label: 'ATM NCR', isTwoWay: false, color: '#2E8EFF' },
+    jalin: { pageId: 'page-jalin', textareaId: 'jalinLogInput', label: 'ATM JALIN', isTwoWay: false, color: '#FF2A3D' },
 };
 
 let summaryChartInstance = null;
@@ -3941,7 +3958,7 @@ function initSummaryRadar({ qLabels, qDispAmount, qNetAmount, qTotals, isTwoWay,
         if (isTwoWay) {
             const net = qNetAmount[qi];
             const sign = net >= 0 ? '+' : '';
-            const color = net >= 0 ? '#10b981' : '#ef4444';
+            const color = net >= 0 ? '#39FF6A' : '#FF2A3D';
             readout.innerHTML = `<span class="text-slate-400">${qLabels[qi]}</span><span class="mx-2 text-slate-600">|</span><span style="color:${color}" class="font-black">${sign}${formatRp(net)}</span><span class="mx-2 text-slate-600">|</span><span class="text-slate-400">${trxCount.toLocaleString('id-ID')} transaksi</span>`;
         } else {
             readout.innerHTML = `<span class="text-slate-400">${qLabels[qi]}</span><span class="mx-2 text-slate-600">|</span><span style="color:${themeColor}" class="font-black">${formatRp(qDispAmount[qi])}</span><span class="mx-2 text-slate-600">|</span><span class="text-slate-400">${trxCount.toLocaleString('id-ID')} transaksi</span>`;
@@ -4078,7 +4095,7 @@ function renderSummaryContent(body, cfg, agg) {
             const netAmount = qNetAmount[i];
             const totalTrxQuadrant = qDispCount[i] + qDepCount[i];
             const isPositive = netAmount >= 0;
-            const netColor = isPositive ? '#10b981' : '#ef4444';
+            const netColor = isPositive ? '#39FF6A' : '#FF2A3D';
             const intensity = Math.abs(netAmount) / maxAbsNet;
             const bg = isPositive
                 ? `rgba(16, 185, 129, ${0.08 + intensity * 0.3})`
@@ -4155,9 +4172,9 @@ function renderSummaryContent(body, cfg, agg) {
                             <div class="text-xs font-mono text-slate-400 mt-1 leading-relaxed">50rb: ${Math.round(dep.lembar50)} lbr<br>100rb: ${Math.round(dep.lembar100)} lbr</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-xs font-bold uppercase tracking-wide mb-1" style="color:${net.amount >= 0 ? '#10b981' : '#ef4444'}">Net</div>
-                            <div class="text-lg font-mono font-black" style="color:${net.amount >= 0 ? '#10b981' : '#ef4444'}">${net.amount >= 0 ? '+' : ''}${formatRp(net.amount)}</div>
-                            <div class="text-xs font-mono mt-1 leading-relaxed" style="color:${net.amount >= 0 ? '#10b981' : '#ef4444'}">50rb: ${net.lembar50 >= 0 ? '+' : ''}${Math.round(net.lembar50)} lbr<br>100rb: ${net.lembar100 >= 0 ? '+' : ''}${Math.round(net.lembar100)} lbr</div>
+                            <div class="text-xs font-bold uppercase tracking-wide mb-1" style="color:${net.amount >= 0 ? '#39FF6A' : '#FF2A3D'}">Net</div>
+                            <div class="text-lg font-mono font-black" style="color:${net.amount >= 0 ? '#39FF6A' : '#FF2A3D'}">${net.amount >= 0 ? '+' : ''}${formatRp(net.amount)}</div>
+                            <div class="text-xs font-mono mt-1 leading-relaxed" style="color:${net.amount >= 0 ? '#39FF6A' : '#FF2A3D'}">50rb: ${net.lembar50 >= 0 ? '+' : ''}${Math.round(net.lembar50)} lbr<br>100rb: ${net.lembar100 >= 0 ? '+' : ''}${Math.round(net.lembar100)} lbr</div>
                         </div>
                     </div>
                 </div>`;
@@ -4249,11 +4266,12 @@ function renderSummaryContent(body, cfg, agg) {
             <thead class="text-xs font-black text-slate-300 uppercase bg-slate-900/80 border-b border-slate-700">
                 <tr>
                     <th rowspan="2" class="px-4 py-3 text-left align-middle">Tanggal</th>
+                    <th rowspan="2" class="px-4 py-3 text-center align-middle border-l-2 border-l-slate-600">Saldo Awal</th>
                     <th colspan="3" class="px-4 py-2 text-center border-b-2 border-slate-500 border-l-2 border-l-slate-600">Lembar Transaksi</th>
                     <th rowspan="2" class="px-4 py-3 text-center align-middle border-l-2 border-l-slate-600">Nominal Dispense</th>
                 </tr>
                 <tr>
-                    <th class="px-3 py-2 text-center font-bold border-l-2 border-l-slate-600">Saldo Awal</th>
+                    <th class="px-3 py-2 text-center font-bold border-l-2 border-l-slate-600">Saldo</th>
                     <th class="px-3 py-2 text-center font-bold text-danger">Dispense</th>
                     <th class="px-3 py-2 text-center font-bold">Saldo Akhir</th>
                 </tr>
@@ -4263,11 +4281,29 @@ function renderSummaryContent(body, cfg, agg) {
             const dateLabel = formatDateShort(d.date);
             const saldoAwalLembar = agg.roundUnit ? Math.round(d.saldoAwal / agg.roundUnit) : d.saldoAwal;
             const saldoAkhirLembar = agg.roundUnit ? Math.round(d.saldoAkhir / agg.roundUnit) : d.saldoAkhir;
+            // FIX (poin baru dari user, samakan dgn contoh gambar): kolom "Saldo Awal" berdiri
+            // sendiri sekarang HANYA menampilkan nominal replenish SEGAR hari itu (kosong "-"
+            // di hari biasa) - beda dgn sub-kolom "Saldo" di grup Lembar Transaksi yg tetap
+            // menampilkan saldo BAWAAN dari hari sebelumnya (kontinu, setiap hari).
+            const freshReplenishLembar = (d.hasReplenish && d.rplSplit && d.rplSplit.saldoAfterRplStart !== null)
+                ? (agg.roundUnit ? Math.round(d.rplSplit.saldoAfterRplStart / agg.roundUnit) : d.rplSplit.saldoAfterRplStart)
+                : null;
+            // Hari yg ada event REPLENISH, kolom Dispense pecah jadi "lembar-sebelum-RPL |
+            // lembar-sesudah-RPL" - bagian SESUDAH RPL digarisbawahi hijau (sudah masuk
+            // periode baru). Murni tampilan; d.dispLembar (total harian penuh, dipakai di
+            // Nominal Dispense & tempat lain) TIDAK diubah/disentuh.
+            const dispCell = (d.hasReplenish && d.rplSplit)
+                ? `${d.rplSplit.dispBeforeLembar.toLocaleString('id-ID')}<span class="text-slate-600 mx-0.5">|</span><span class="text-hijau underline decoration-hijau decoration-2 underline-offset-2">${d.rplSplit.dispAfterLembar.toLocaleString('id-ID')}</span>`
+                : `${d.dispLembar.toLocaleString('id-ID')}`;
+            const saldoCarryCell = d.hasReplenish
+                ? `<span class="underline decoration-hijau decoration-2 underline-offset-2">${saldoAwalLembar.toLocaleString('id-ID')}</span>`
+                : `${saldoAwalLembar.toLocaleString('id-ID')}`;
             tableHtml += `
                     <tr class="summary-daily-row hover:bg-white/5 transition-colors ${d.hasReplenish ? 'has-replenish' : ''}">
                         <td class="px-4 py-3 font-bold whitespace-nowrap">${dateLabel} ${d.hasReplenish ? '<span class="text-teal-400 text-xs ml-1 font-bold" title="Ada event REPLENISH pada tanggal ini">↻ REPLENISH</span>' : ''}</td>
-                        <td class="px-3 py-3 text-center border-l-2 border-l-slate-700/50">${saldoAwalLembar.toLocaleString('id-ID')}</td>
-                        <td class="px-3 py-3 text-center font-bold text-danger">${d.dispLembar}</td>
+                        <td class="px-4 py-3 text-center font-bold border-l-2 border-l-slate-600">${freshReplenishLembar !== null ? freshReplenishLembar.toLocaleString('id-ID') : '-'}</td>
+                        <td class="px-3 py-3 text-center border-l-2 border-l-slate-700/50">${saldoCarryCell}</td>
+                        <td class="px-3 py-3 text-center font-bold text-danger">${dispCell}</td>
                         <td class="px-3 py-3 text-center">${saldoAkhirLembar.toLocaleString('id-ID')}</td>
                         <td class="px-4 py-3 text-center text-danger font-bold border-l-2 border-l-slate-600">${formatRp(d.dispAmount)}</td>
                     </tr>`;
