@@ -4292,8 +4292,18 @@ function renderSummaryContent(body, cfg, agg) {
             // lembar-sesudah-RPL" - bagian SESUDAH RPL digarisbawahi hijau (sudah masuk
             // periode baru). Murni tampilan; d.dispLembar (total harian penuh, dipakai di
             // Nominal Dispense & tempat lain) TIDAK diubah/disentuh.
+            // FIX (koreksi user): kiri = periode BARU (sesudah RPL), kanan = periode LAMA
+            // (sebelum RPL) - garis bawah SELALU di nilai periode lama (kanan), krn itu yg
+            // menandakan "titik ini periode/perhitungan berhenti". Dipakai grid 2 kolom lebar
+            // tetap (bukan teks lepas rata-tengah) supaya karakter "|" presisi di tengah cell
+            // berapa pun jumlah digit di kiri/kanannya - tidak lagi miring kalau lembar lama
+            // vs baru beda jumlah digit (mis. "0" vs "1.293").
             const dispCell = (d.hasReplenish && d.rplSplit)
-                ? `${d.rplSplit.dispBeforeLembar.toLocaleString('id-ID')}<span class="text-slate-600 mx-0.5">|</span><span class="text-hijau underline decoration-hijau decoration-2 underline-offset-2">${d.rplSplit.dispAfterLembar.toLocaleString('id-ID')}</span>`
+                ? `<span class="inline-grid grid-cols-[1fr_auto_1fr] items-center w-full max-w-[110px]">
+                        <span class="text-right pr-1.5">${d.rplSplit.dispAfterLembar.toLocaleString('id-ID')}</span>
+                        <span class="text-slate-600">|</span>
+                        <span class="text-left pl-1.5 underline decoration-hijau decoration-2 underline-offset-2">${d.rplSplit.dispBeforeLembar.toLocaleString('id-ID')}</span>
+                   </span>`
                 : `${d.dispLembar.toLocaleString('id-ID')}`;
             const saldoCarryCell = d.hasReplenish
                 ? `<span class="underline decoration-hijau decoration-2 underline-offset-2">${saldoAwalLembar.toLocaleString('id-ID')}</span>`
