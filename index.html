@@ -162,10 +162,14 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl relative z-10">
-                <!-- Left Column - Machine Buttons (2/3 width) -->
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Left Column - Machine Buttons (2/3 width) - grid 12-kolom TERPADU: ATM 3x
+                     (col-span-4), ATM JALIN (col-span-12, banner ramping horizontal), CRM 4x
+                     (col-span-3). Semua kartu tetap di DALAM lebar kolom kiri ini (tidak melebar
+                     ke luar spt sebelumnya) - kartu CRM jadi sedikit lebih kecil/ramping drpd ATM,
+                     tapi presisi & tegas, sesuai referensi tata letak yang diminta. -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-12 gap-6">
                     <!-- VENDOR A -->
-                    <div onclick="navigateTo('page-hyosung')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                    <div onclick="navigateTo('page-hyosung')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent md:col-span-4">
                         <div class="flex justify-between items-start">
                             <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">01</div>
                             <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR A</span>
@@ -178,7 +182,7 @@
                     </div>
 
                     <!-- VENDOR B -->
-                    <div onclick="navigateTo('page-wincor')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                    <div onclick="navigateTo('page-wincor')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent md:col-span-4">
                         <div class="flex justify-between items-start">
                             <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">02</div>
                             <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR B</span>
@@ -191,7 +195,7 @@
                     </div>
 
                     <!-- VENDOR C -->
-                    <div onclick="navigateTo('page-ncr')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent">
+                    <div onclick="navigateTo('page-ncr')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-primary relative overflow-hidden hover:border-t-accent md:col-span-4">
                         <div class="flex justify-between items-start">
                             <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 text-primary font-bold font-mono text-xl group-hover:bg-primary/30 transition-colors">03</div>
                             <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">VENDOR C</span>
@@ -203,55 +207,71 @@
                         </div>
                     </div>
 
-                    <!-- ATM JALIN - NEW BUTTON (Updated) -->
-                    <div onclick="navigateTo('page-jalin')" class="btn-main glass-panel rounded-2xl p-8 h-30 flex flex-col justify-between cursor-pointer group border-t-4 border-t-white relative overflow-hidden hover:border-t-red-500 md:col-span-3" style="background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%); border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 66.666667%; margin: 0 auto;">
-                        <div class="flex justify-between items-start">
-                            <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center border border-white/30 text-white font-bold font-mono text-xl group-hover:bg-white/30 transition-colors">04</div>
-                            <span class="font-mono text-xs font-bold text-white/80 uppercase tracking-widest border border-white/30 px-2 py-1 rounded">ATM JALIN</span>
+                    <!-- ATM JALIN - REDESIGN: banner ramping horizontal (bukan kartu vertikal tinggi
+                         lagi) supaya tidak dominan, badge+judul sejajar horizontal, tetap 66.67% lebar
+                         & rata tengah seperti sebelumnya. -->
+                    <div onclick="navigateTo('page-jalin')" class="btn-main glass-panel rounded-2xl px-8 py-5 h-28 flex items-center justify-between cursor-pointer group border-t-4 border-t-white relative overflow-hidden hover:border-t-red-500 md:col-span-12" style="background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%); border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.5); width: 66.666667%; margin: 0 auto;">
+                        <div class="flex items-center gap-5 relative z-10">
+                            <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center border border-white/30 text-white font-bold font-mono text-xl group-hover:bg-white/30 transition-colors shrink-0">04</div>
+                            <div>
+                                <h3 class="text-2xl font-black text-white group-hover:text-red-300 transition-colors">ATM JALIN</h3>
+                                <div class="h-1.5 w-12 bg-white/50 group-hover:w-full group-hover:bg-red-300 transition-all duration-500 rounded-full mt-1.5"></div>
+                            </div>
                         </div>
-                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">JALIN</span>
+                        <span class="font-mono text-xs font-bold text-white/80 uppercase tracking-widest border border-white/30 px-3 py-1.5 rounded relative z-10 shrink-0">ATM JALIN</span>
+                        <span class="absolute top-1/2 right-6 -translate-y-1/2 text-7xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none pointer-events-none">JALIN</span>
+                    </div>
+
+                    <!-- CRM HITACHI - REDESIGN: kartu lebih ramping (h-56, col-span-3 dari grid 12
+                         kolom yg sama dgn ATM) - lebar total konsisten dgn baris ATM di atas -->
+                    <div onclick="navigateTo('page-crm')" class="btn-main glass-panel rounded-2xl p-6 h-56 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent md:col-span-3">
+                        <div class="flex justify-between items-start">
+                            <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-lg group-hover:bg-warning/30 transition-colors">05</div>
+                            <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM A</span>
+                        </div>
+                        <span class="absolute top-1/2 right-[-10px] -translate-y-1/2 text-7xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none">CRM</span>
                         <div>
-                            <h3 class="text-3xl font-black text-white group-hover:text-red-300 transition-colors mb-2">ATM JALIN</h3>
-                            <div class="h-1.5 w-12 bg-white/50 group-hover:w-full group-hover:bg-red-300 transition-all duration-500 rounded-full"></div>
+                            <h3 class="text-xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM HITACHI</h3>
+                            <div class="h-1.5 w-10 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
                         </div>
                     </div>
 
-                    <!-- CRM HITACHI - REDESIGN: kotak persegi seragam ala ATM, warna warning (ketentuan warna CRM) -->
-                    <div onclick="navigateTo('page-crm')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent">
+                    <!-- CRM DINABOLD - REDESIGN: samakan dgn Hitachi (ramping, col-span-3) -->
+                    <div onclick="navigateTo('page-crm-dinabold')" class="btn-main glass-panel rounded-2xl p-6 h-56 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent md:col-span-3">
                         <div class="flex justify-between items-start">
-                            <div class="w-12 h-12 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-xl group-hover:bg-warning/30 transition-colors">05</div>
-                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM A</span>
+                            <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-lg group-hover:bg-warning/30 transition-colors">06</div>
+                            <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM B</span>
                         </div>
-                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">CRM</span>
+                        <span class="absolute top-1/2 right-[-10px] -translate-y-1/2 text-7xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none">CRM</span>
                         <div>
-                            <h3 class="text-3xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM HITACHI</h3>
-                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
+                            <h3 class="text-xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM DINABOLD</h3>
+                            <div class="h-1.5 w-10 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
                         </div>
                     </div>
 
-                    <!-- CRM DINABOLD - REDESIGN: kotak persegi seragam ala ATM, warna warning (samakan dgn Hitachi) -->
-                    <div onclick="navigateTo('page-crm-dinabold')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent">
+                    <!-- CRM OKI - REDESIGN: samakan dgn Hitachi/Dinabold (ramping, col-span-3) -->
+                    <div onclick="navigateTo('page-crm-oki')" class="btn-main glass-panel rounded-2xl p-6 h-56 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent md:col-span-3">
                         <div class="flex justify-between items-start">
-                            <div class="w-12 h-12 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-xl group-hover:bg-warning/30 transition-colors">06</div>
-                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM B</span>
+                            <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-lg group-hover:bg-warning/30 transition-colors">07</div>
+                            <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM C</span>
                         </div>
-                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">CRM</span>
+                        <span class="absolute top-1/2 right-[-10px] -translate-y-1/2 text-7xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none">CRM</span>
                         <div>
-                            <h3 class="text-3xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM DINABOLD</h3>
-                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
+                            <h3 class="text-xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM OKI</h3>
+                            <div class="h-1.5 w-10 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
                         </div>
                     </div>
 
-                    <!-- CRM OKI (MODUL BARU) - kotak persegi seragam ala ATM, warna warning -->
-                    <div onclick="navigateTo('page-crm-oki')" class="btn-main glass-panel rounded-2xl p-8 h-72 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent">
+                    <!-- CRM HYOSUNG (MODUL BARU) - samakan dgn 3 CRM lain (ramping, col-span-3) -->
+                    <div onclick="navigateTo('page-crm-hyosung')" class="btn-main glass-panel rounded-2xl p-6 h-56 flex flex-col justify-between cursor-pointer group border-t-4 border-t-warning relative overflow-hidden hover:border-t-accent md:col-span-3">
                         <div class="flex justify-between items-start">
-                            <div class="w-12 h-12 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-xl group-hover:bg-warning/30 transition-colors">07</div>
-                            <span class="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM C</span>
+                            <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center border border-warning/30 text-warning font-bold font-mono text-lg group-hover:bg-warning/30 transition-colors">08</div>
+                            <span class="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">CRM D</span>
                         </div>
-                        <span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-9xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none rotate-90 md:rotate-0">CRM</span>
+                        <span class="absolute top-1/2 right-[-10px] -translate-y-1/2 text-7xl font-black text-white/5 group-hover:text-white/10 transition-colors select-none">CRM</span>
                         <div>
-                            <h3 class="text-3xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM OKI</h3>
-                            <div class="h-1.5 w-12 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
+                            <h3 class="text-xl font-black text-white group-hover:text-warning transition-colors mb-2">CRM HYOSUNG</h3>
+                            <div class="h-1.5 w-10 bg-slate-600 group-hover:w-full group-hover:bg-warning transition-all duration-500 rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -889,6 +909,204 @@
                             <div class="flex-1 overflow-hidden relative bg-dark/30">
                                 <ul id="okyStoredCountList" class="result-list w-full h-full overflow-y-auto p-4 text-xs font-mono text-slate-300 text-center space-y-1"></ul>
                                 <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-600 font-bold bg-dark/80 px-2 py-0.5 rounded border border-slate-700">Count: <span id="okyStoredCountCount">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: CRM HYOSUNG (MODUL BARU) -->
+        <div id="page-crm-hyosung" class="page-section hidden w-full max-w-[95vw] mx-auto fade-enter">
+            <!-- Back to Dashboard Button - Moved to top left -->
+            <div class="back-button-container">
+                <button onclick="navigateTo('page-dashboard')" class="back-button px-6 py-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/50 flex items-center gap-3 text-slate-300 hover:text-white transition-all group w-fit">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span> <span class="font-mono font-bold tracking-wide">BACK TO DASHBOARD</span>
+                </button>
+            </div>
+
+            <!-- PERIODE REPLENISH DISPLAY - IMPROVED DESIGN -->
+            <div class="mt-6">
+                <div class="period-header">
+                    <div class="icon">📅</div>
+                    <span> PILIH PERIODE REPLENISH - CRM HYOSUNG</span>
+                </div>
+                <div id="crmHyosungPeriodDisplay" class="period-container hidden">
+                    <!-- Period buttons will be added here -->
+                </div>
+
+                <div id="crmHyosungPeriodSelected" class="period-selected hidden">
+                    <div class="check">✓</div>
+                    <span>Periode terpilih: <span id="crmHyosungSelectedPeriodText" class="font-bold"></span></span>
+                </div>
+                <div class="period-info">
+                    <strong>Informasi:</strong> Pilih periode replenish untuk menganalisis data pada rentang waktu tertentu. Sistem akan menampilkan hasil analisis sesuai periode yang dipilih.
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <!-- Left Panel (Input & Controls) - Width: 3/12 -->
+                <div class="glass-panel rounded-2xl p-6 lg:col-span-3 h-fit border-l-4 border-l-warning flex flex-col gap-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-3xl font-black text-warning mb-1 tracking-tight">CRM ANALYSIS</h2>
+                            <div id="crmHyosungMachineDisplay" class="font-mono text-xs text-slate-400 font-bold flex items-center gap-2 uppercase tracking-widest">
+                                <span class="w-2 h-2 bg-slate-600 rounded-full"></span>
+                                MACHINE: <span class="text-white">WAITING LOG...</span>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <button onclick="resetFormCrmHyosung()" class="btn-reset">CLEAR FORM</button>
+                        </div>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div class="drop-zone rounded-xl h-64 relative" id="dropzone-crmHyosung">
+                        <div class="drop-zone-overlay rounded-xl">
+                            <svg class="w-12 h-12 text-warning mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <span class="text-white font-bold text-sm">Drop Log File Here (.txt/.log/.zip/.jrn)</span>
+                            <span class="text-slate-400 text-xs mt-2">Or click to select files</span>
+                        </div>
+                        <textarea id="crmHyosungLogInput" class="glass-input w-full h-full rounded-xl p-4 text-[10px] font-mono leading-relaxed border-0 bg-transparent resize-none focus:ring-0" placeholder="> Drag & Drop file Log (.txt/.log/.zip/.jrn) di sini..."></textarea>
+                        <input type="file" id="file-crmHyosung" class="hidden" multiple accept=".txt,.log,.zip,.jrn">
+                    </div>
+
+                    <!-- Input Fisik -->
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-1 h-4 bg-warning"></div>
+                            <p class="text-xs font-bold text-slate-300 uppercase tracking-widest">Input Fisik Remaining</p>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold block mb-1">DENOM 100.000</label>
+                                <input type="number" id="crmHyosungPhys100" class="glass-input w-full p-3 rounded-lg text-right text-white font-bold text-lg" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold block mb-1">DENOM 50.000</label>
+                                <input type="number" id="crmHyosungPhys50" class="glass-input w-full p-3 rounded-lg text-right text-white font-bold text-lg" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="crmHyosungFilterButton" class="w-full py-4 bg-warning hover:brightness-110 text-black font-black text-xl rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all uppercase tracking-widest transform hover:-translate-y-1">
+                        ANALISIS
+                    </button>
+                </div>
+
+                <!-- Right Panel (Results) - Width: 9/12 -->
+                <div class="lg:col-span-9 flex flex-col gap-6">
+
+                    <!-- TOP STATS (Wide Grid) -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+                        <!-- Init -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-slate-700 hover:border-slate-500 transition-colors overflow-hidden group">
+                            <div class="text-[10px] font-black font-mono text-slate-500 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-slate-300 transition-colors">REPLENISH</div>
+                            <div id="crmHyosungInitAmount" class="text-2xl lg:text-3xl font-mono font-black text-white whitespace-nowrap drop-shadow-md">0</div>
+                        </div>
+                        <!-- Disp -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-danger/30 hover:border-danger transition-colors overflow-hidden box-glow-danger group">
+                            <div class="text-[10px] font-black font-mono text-danger/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-danger transition-colors">DISPENSED</div>
+                            <div id="crmHyosungDispAmount" class="text-2xl lg:text-3xl font-mono font-black text-danger drop-shadow-[0_0_10px_rgba(239,68,68,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Dep -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-success/30 hover:border-success transition-colors overflow-hidden box-glow-success group">
+                            <div class="text-[10px] font-black font-mono text-success/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-success transition-colors">DEPOSITED</div>
+                            <div id="crmHyosungDepAmount" class="text-2xl lg:text-3xl font-mono font-black text-success drop-shadow-[0_0_10px_rgba(16,185,129,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Rem -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-warning/30 hover:border-warning transition-colors overflow-hidden group">
+                            <div class="text-[10px] font-black font-mono text-warning/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-warning transition-colors">REMAINING</div>
+                            <div id="crmHyosungRemAmount" class="text-2xl lg:text-3xl font-mono font-black text-warning drop-shadow-[0_0_10px_rgba(245,158,11,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                        <!-- Fisik Rem (Calculated) -->
+                        <div class="glass-panel p-5 rounded-xl text-center bg-dark/40 border border-purple/30 hover:border-purple transition-colors overflow-hidden group">
+                            <div class="text-[10px] font-black font-mono text-purple/70 mb-2 tracking-[0.2em] uppercase whitespace-nowrap group-hover:text-purple transition-colors">FISIK REM</div>
+                            <div id="crmHyosungTotalPhysAmount" class="text-2xl lg:text-3xl font-mono font-black text-purple drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] whitespace-nowrap">0</div>
+                        </div>
+                    </div>
+
+                    <!-- RECONCILIATION RESULT (Total) -->
+                    <div id="crmHyosungTotalReconBox" class="glass-panel p-8 rounded-2xl border flex flex-col justify-center items-center transition-all duration-500 w-full min-h-[180px]">
+                        <div class="text-xs font-black font-mono text-slate-500 mb-2 tracking-[0.3em] uppercase">HASIL REKONSILIASI (TOTAL)</div>
+                        <div id="crmHyosungTotalReconResult" class="text-5xl lg:text-6xl font-mono font-black text-slate-600 tracking-tight whitespace-nowrap py-2">MENUNGGU INPUT</div>
+                        <!-- Expression -->
+                        <div id="crmHyosungExpression" class="text-center mt-4 text-2xl lg:text-3xl font-mono font-black min-h-[40px] w-full drop-shadow-lg"></div>
+                    </div>
+
+                    <!-- TABLE DETAIL -->
+                    <div class="glass-panel rounded-xl overflow-hidden border border-slate-700/50 w-full">
+                        <table class="w-full text-base text-left">
+                            <thead class="text-xs font-black text-slate-400 uppercase bg-slate-900/80 border-b border-slate-700">
+                                <tr>
+                                    <th class="px-8 py-5 tracking-widest">KATEGORI</th>
+                                    <th class="px-8 py-5 text-center tracking-widest">100.000</th>
+                                    <th class="px-8 py-5 text-center tracking-widest">50.000</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-mono text-slate-200 divide-y divide-slate-700/30 text-sm">
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-slate-400 tracking-wide">REPLENISH</td>
+                                    <td id="crmHyosungInit100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="crmHyosungInit50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-danger tracking-wide">DISPENSED</td>
+                                    <td id="crmHyosungDisp100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="crmHyosungDisp50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-success tracking-wide">DEPOSITED</td>
+                                    <td id="crmHyosungDep100" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                    <td id="crmHyosungDep50" class="px-8 py-4 text-center font-bold text-lg">0</td>
+                                </tr>
+                                <tr class="bg-warning/5 border-t-2 border-warning/20 hover:bg-warning/10 transition-colors">
+                                    <td class="px-8 py-5 font-black text-warning tracking-widest">REMAINING</td>
+                                    <td id="crmHyosungRem100" class="px-8 py-5 text-center text-warning font-black text-2xl">0</td>
+                                    <td id="crmHyosungRem50" class="px-8 py-5 text-center text-warning font-black text-2xl">0</td>
+                                </tr>
+                                <tr class="bg-purple/5 border-t border-slate-700/50 hover:bg-purple/10 transition-colors">
+                                    <td class="px-8 py-4 font-bold text-purple tracking-widest">FISIK REMAINING</td>
+                                    <td id="crmHyosungResPhys100" class="px-8 py-4 text-center font-black text-xl text-white">0</td>
+                                    <td id="crmHyosungResPhys50" class="px-8 py-4 text-center font-black text-xl text-white">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LISTS (Cash Presented & Stored Count) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- List 1 -->
+                        <div class="glass-panel rounded-xl p-0 overflow-hidden border border-slate-700/50 flex flex-col h-64">
+                            <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700 flex justify-between items-center shrink-0">
+                                <span class="text-xs font-black text-slate-400 tracking-[0.2em]">CASH PRESENTED</span>
+                                <button onclick="copyListToClipboard('crmHyosungCashPresentedList', this)" class="btn-copy">COPY</button>
+                            </div>
+                            <div class="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 text-center shrink-0">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">TOTAL VALUE</div>
+                                <div id="crmHyosungCashPresentedTotal" class="text-3xl font-mono font-black text-neon text-neon drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] tracking-tight">0</div>
+                            </div>
+                            <div class="flex-1 overflow-hidden relative bg-dark/30">
+                                <ul id="crmHyosungCashPresentedList" class="result-list w-full h-full overflow-y-auto p-4 text-xs font-mono text-slate-300 text-center space-y-1"></ul>
+                                <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-600 font-bold bg-dark/80 px-2 py-0.5 rounded border border-slate-700">Count: <span id="crmHyosungCashPresentedCount">0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- List 2 -->
+                        <div class="glass-panel rounded-xl p-0 overflow-hidden border border-slate-700/50 flex flex-col h-64">
+                            <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700 flex justify-between items-center shrink-0">
+                                <span class="text-xs font-black text-slate-400 tracking-[0.2em]">STORED COUNT</span>
+                                <button onclick="copyListToClipboard('crmHyosungStoredCountList', this)" class="btn-copy">COPY</button>
+                            </div>
+                            <div class="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 text-center shrink-0">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">TOTAL VALUE</div>
+                                <div id="crmHyosungStoredCountTotal" class="text-3xl font-mono font-black text-neon text-neon drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] tracking-tight">0</div>
+                            </div>
+                            <div class="flex-1 overflow-hidden relative bg-dark/30">
+                                <ul id="crmHyosungStoredCountList" class="result-list w-full h-full overflow-y-auto p-4 text-xs font-mono text-slate-300 text-center space-y-1"></ul>
+                                <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-600 font-bold bg-dark/80 px-2 py-0.5 rounded border border-slate-700">Count: <span id="crmHyosungStoredCountCount">0</span></div>
                             </div>
                         </div>
                     </div>

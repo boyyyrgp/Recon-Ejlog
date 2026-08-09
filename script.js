@@ -10,6 +10,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults) {
 let dataFilterCRMHitachi;
 let dataFilterCRMDinabold;
 let dataFilterCRMOky;
+let dataFilterCRMHyosung;
 let hyosungPeriods = [];
 let currentHyosungPeriod = null;
 let ncrPeriods = [];
@@ -56,12 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
     dataFilterCRMHitachi = new DataFilterCRMHitachi(); 
     dataFilterCRMDinabold = new DataFilterCRMDinabold();
     dataFilterCRMOky = new DataFilterCRMOky();
+    dataFilterCRMHyosung = new DataFilterCRMHyosung();
 
-    // POIN 2: tambahkan tombol SUMMARY ke 7 halaman (murni DOM injection, additive)
+    // POIN 2: tambahkan tombol SUMMARY ke 8 halaman (murni DOM injection, additive)
     injectSummaryButtons();
     
     // Setup untuk semua mesin
-    ['crm', 'wincor', 'hyosung', 'ncr', 'jalin', 'dn', 'oky'].forEach(machine => {
+    ['crm', 'wincor', 'hyosung', 'ncr', 'jalin', 'dn', 'oky', 'crmHyosung'].forEach(machine => {
         setupDragAndDrop(`dropzone-${machine}`, `file-${machine}`, `${machine}LogInput`, machine);
         
         // Setup input file click via dropzone
@@ -393,6 +395,78 @@ function resetFormOky() {
     if (typeof dataFilterCRMOky !== 'undefined' && dataFilterCRMOky) {
         dataFilterCRMOky.periods = [];
         dataFilterCRMOky.currentPeriod = null;
+    }
+
+    alert('Form has been reset!');
+}
+
+// --- CRM HYOSUNG (MODUL BARU) - resetForm mengikuti pola resetFormOky persis ---
+function resetFormCrmHyosung() {
+    const logInput = document.getElementById('crmHyosungLogInput');
+    if (logInput) logInput.value = '';
+
+    const p100 = document.getElementById('crmHyosungPhys100');
+    const p50 = document.getElementById('crmHyosungPhys50');
+    if (p100) p100.value = '';
+    if (p50) p50.value = '';
+
+    const machineDisplay = document.getElementById('crmHyosungMachineDisplay');
+    if (machineDisplay) {
+        machineDisplay.innerHTML = `<span class="w-2 h-2 bg-slate-600 rounded-full"></span> MACHINE: <span class="text-white">WAITING LOG...</span>`;
+    }
+
+    const reconBox = document.getElementById('crmHyosungTotalReconBox');
+    if (reconBox) {
+        reconBox.className = "glass-panel p-8 rounded-2xl border flex flex-col justify-center items-center transition-all duration-500 w-full min-h-[180px]";
+        const reconResult = document.getElementById('crmHyosungTotalReconResult');
+        if (reconResult) {
+            reconResult.textContent = "MENUNGGU INPUT";
+            reconResult.className = "text-5xl lg:text-6xl font-mono font-black text-slate-600 tracking-tight whitespace-nowrap py-2";
+        }
+        const expression = document.getElementById('crmHyosungExpression');
+        if (expression) expression.textContent = '';
+    }
+
+    ['crmHyosungInit100', 'crmHyosungInit50', 'crmHyosungDisp100', 'crmHyosungDisp50', 'crmHyosungDep100', 'crmHyosungDep50', 'crmHyosungRem100', 'crmHyosungRem50', 'crmHyosungResPhys100', 'crmHyosungResPhys50'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+    ['crmHyosungInitAmount', 'crmHyosungDispAmount', 'crmHyosungDepAmount', 'crmHyosungRemAmount'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+
+    const totalPhys = document.getElementById('crmHyosungTotalPhysAmount');
+    if (totalPhys) {
+        totalPhys.textContent = '0';
+        totalPhys.classList.remove('text-sm');
+    }
+
+    const cashList = document.getElementById('crmHyosungCashPresentedList');
+    if (cashList) cashList.innerHTML = '';
+    const cashCount = document.getElementById('crmHyosungCashPresentedCount');
+    if (cashCount) cashCount.textContent = '0';
+    const cashTotal = document.getElementById('crmHyosungCashPresentedTotal');
+    if (cashTotal) cashTotal.textContent = '0';
+
+    const storedList = document.getElementById('crmHyosungStoredCountList');
+    if (storedList) storedList.innerHTML = '';
+    const storedCount = document.getElementById('crmHyosungStoredCountCount');
+    if (storedCount) storedCount.textContent = '0';
+    const storedTotal = document.getElementById('crmHyosungStoredCountTotal');
+    if (storedTotal) storedTotal.textContent = '0';
+
+    const periodDisplay = document.getElementById('crmHyosungPeriodDisplay');
+    if (periodDisplay) {
+        periodDisplay.innerHTML = '';
+        periodDisplay.classList.add('hidden');
+    }
+    const periodSelected = document.getElementById('crmHyosungPeriodSelected');
+    if (periodSelected) periodSelected.classList.add('hidden');
+
+    if (typeof dataFilterCRMHyosung !== 'undefined' && dataFilterCRMHyosung) {
+        dataFilterCRMHyosung.periods = [];
+        dataFilterCRMHyosung.currentPeriod = null;
     }
 
     alert('Form has been reset!');
@@ -792,6 +866,16 @@ const LOG_MERGE_ADAPTERS = {
         resolveAdminKey: (line) => selfTimestampAdminKeyResolver(line),
         blockDedup: dedupOkyReplenishmentBlocks, // FIX: blok marker RPL Oki bisa duplikat persis, tidak kena dedup baris generik
     },
+    // CRM HYOSUNG (MODUL BARU): struktur EJ log mirip ATM Hyosung (jam mentah "DD/MM/YYYY
+    // HH:MM:SS" di tiap baris admin) & strukTANGGAL/WAKTU/ATM ID/NO.REF/AMOUNT sama seperti
+    // Hitachi/Oky/Dinabold - adapter identik dgn hyosung/oky, tidak perlu blockDedup khusus
+    // (belum ditemukan indikasi blok ADD CASH terduplikasi persis seperti kasus RPL Oki).
+    crmHyosung: {
+        fileDateFinder: standardFileDateFinder,
+        trxDedupRegex: STANDARD_TRX_DEDUP_REGEX,
+        adminMarkerTest: (line) => /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}/.test(line),
+        resolveAdminKey: (line) => selfTimestampAdminKeyResolver(line),
+    },
 };
 
 /**
@@ -1166,6 +1250,26 @@ function reconFindTransactionTimestampGeneric(lines, idx, windowSize = 20, prefe
     const m = extractDateTimeNearLine(lines, idx, preferredOffsets, RECON_GENERIC_DATETIME_REGEX, windowSize);
     if (!m) return null;
     return buildDateFromParts(m[1], m[2], m[3], m[4], m[5], m[6]);
+}
+
+// --- CRM HYOSUNG (MODUL BARU): marker "ADD CASH:" (bare label, sama persis gaya ATM
+// Hyosung), jam mentah ada di baris SEBELUMNYA (offset -1, kadang -2/-3 kalau ada baris
+// kosong sisipan). Dipakai juga untuk validasi timestamp transaksi (reconIsWithinPeriod)
+// supaya basis jam tsStart/tsEnd & basis jam transaksi KONSISTEN satu sama lain (pelajaran
+// dari fix Oki di atas - reconFindOkyTransactionTimestamp) - bukan struk TANGGAL/WAKTU.
+function reconCrmHyosungMarkerTimestamp(lines, addCashIdx) {
+    for (let k = addCashIdx - 1; k >= Math.max(0, addCashIdx - 3); k--) {
+        const m = lines[k].match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+        if (m) return buildDateFromParts(m[1], m[2], m[3], m[4], m[5], m[6]);
+    }
+    return null;
+}
+function reconFindCrmHyosungTransactionTimestamp(lines, idx, windowSize = 25) {
+    for (let k = idx; k >= Math.max(0, idx - windowSize); k--) {
+        const m = lines[k].match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+        if (m) return buildDateFromParts(m[1], m[2], m[3], m[4], m[5], m[6]);
+    }
+    return null;
 }
 // ============================================================================
 
@@ -2727,6 +2831,530 @@ class DataFilterCRMOky {
     }
 }
 
+// ============================================================
+// CRM HYOSUNG (MODUL BARU) - MODUL TERISOLASI PENUH, tidak mewarisi/mengubah
+// class CRM lain. Ditambahkan atas permintaan user, dianalisis langsung dari
+// sample EJ log asli (EJ_CRM_Hyosung.jrn, 8 hari data, ~305rb baris).
+//
+// Struktur log MIRIP ATM Hyosung (marker "ADD CASH:" bare label, jam mentah
+// di baris SEBELUMNYA, baris kaset "NCST:jumlah"), TAPI mesin ini recycler
+// 2-arah (dispense+deposit) dgn 4 kaset didedikasikan ke 2 denominasi TETAP -
+// ikut konvensi CRM yang sudah baku di aplikasi ini (SAMA seperti
+// Hitachi/Dinabold/Oki, dikonfirmasi user & tervalidasi dari data asli lewat
+// baris "RCY IDR 100K"/"RCY IDR 50K" pada blok "Print Cash" log):
+//   kaset 1 & 2 = IDR 100.000, kaset 3 & 4 = IDR 50.000.
+// TIDAK memakai deteksi 1-denominasi-per-mesin ala ATM Hyosung (detectHyosungDenom).
+//
+// Marker REPLENISH: baris "ADD CASH:" diikuti 4 baris "NCST:jumlah" (1CST/2CST/
+// 3CST/4CST) - INIT per kaset diambil LANGSUNG dari nilai ini (beda dari ATM
+// Hyosung yg mewajibkan tiap kaset persis 2000/0 - di CRM ini nilainya bervariasi
+// sesuai denominasi, mis. 2000/2000/1000/1000).
+//
+// Dispense: "Request Count [c1,c2,c3,c4]" diikuti "Dispense Count [c1,c2,c3,c4]"
+// tepat 1 baris berikutnya - pakai Dispense Count (fisik riil keluar dari kaset),
+// sama seperti fix presisi lembar Oki (lihat komentar calculateDISP Oki).
+//
+// Deposit: "Store Count [c1,c2,c3,c4]" - beda format dari Hitachi/Oki ("Stored
+// Count" baris tunggal + lookahead "[100000,N]"/"[50000,N]") - di sini SUDAH
+// bracket 4-kolom langsung dalam 1 baris, tidak perlu lookahead multi-baris.
+//
+// Timestamp: tsStart/tsEnd (dari marker ADD CASH) & validasi tiap transaksi
+// SAMA-SAMA pakai jam MENTAH (baris "DD/MM/YYYY HH:MM:SS" terdekat) - BUKAN
+// struk TANGGAL/WAKTU - supaya basis jamnya konsisten satu sama lain (pelajaran
+// dari fix Oki, lihat reconFindOkyTransactionTimestamp).
+//
+// CATATAN VALIDASI (penting): kolom DISPENSED tervalidasi 100% cocok persis dgn
+// laporan "Print Cash" internal log pada 4 periode yang diuji. Kolom DEPOSITED
+// dihitung LANGSUNG dari total tiap transaksi setor individual (metode paling
+// akurat sesuai arahan user - "temukan & hitung satu-persatu tiap transaksi").
+// Nilai ini bisa terpaut kecil (~0.05%-1.5%) dari angka "DEP AMOUNT" versi
+// laporan Print Cash internal mesin - user sendiri mengonfirmasi laporan Print
+// Cash TIDAK selalu akurat, kemungkinan krn sebagian uang setoran disortir mesin
+// ke kaset "MIX" di luar kaset 1-4 sehingga tidak tercermin di kolom kaset
+// laporan tsb, sementara transaksi individual (yang dipakai di sini) tetap
+// mencatat nilai setor penuh yang disetujui/dibebankan ke rekening nasabah.
+// ============================================================
+class DataFilterCRMHyosung {
+    constructor() {
+        this.logInput = document.getElementById('crmHyosungLogInput');
+        this.filterButton = document.getElementById('crmHyosungFilterButton');
+        this.machineDisplay = document.getElementById('crmHyosungMachineDisplay');
+        this.crmHyosungPhys100 = document.getElementById('crmHyosungPhys100');
+        this.crmHyosungPhys50 = document.getElementById('crmHyosungPhys50');
+
+        this.crmHyosungInit100 = document.getElementById('crmHyosungInit100');
+        this.crmHyosungInit50 = document.getElementById('crmHyosungInit50');
+        this.crmHyosungDisp100 = document.getElementById('crmHyosungDisp100');
+        this.crmHyosungDisp50 = document.getElementById('crmHyosungDisp50');
+        this.crmHyosungDep100 = document.getElementById('crmHyosungDep100');
+        this.crmHyosungDep50 = document.getElementById('crmHyosungDep50');
+        this.crmHyosungRem100 = document.getElementById('crmHyosungRem100');
+        this.crmHyosungRem50 = document.getElementById('crmHyosungRem50');
+
+        this.crmHyosungInitAmount = document.getElementById('crmHyosungInitAmount');
+        this.crmHyosungDispAmount = document.getElementById('crmHyosungDispAmount');
+        this.crmHyosungDepAmount = document.getElementById('crmHyosungDepAmount');
+        this.crmHyosungRemAmount = document.getElementById('crmHyosungRemAmount');
+        this.crmHyosungTotalPhysAmount = document.getElementById('crmHyosungTotalPhysAmount');
+
+        this.crmHyosungCashPresentedCount = document.getElementById('crmHyosungCashPresentedCount');
+        this.crmHyosungCashPresentedTotal = document.getElementById('crmHyosungCashPresentedTotal');
+        this.crmHyosungCashPresentedList = document.getElementById('crmHyosungCashPresentedList');
+        this.crmHyosungStoredCountCount = document.getElementById('crmHyosungStoredCountCount');
+        this.crmHyosungStoredCountTotal = document.getElementById('crmHyosungStoredCountTotal');
+        this.crmHyosungStoredCountList = document.getElementById('crmHyosungStoredCountList');
+
+        this.periods = [];
+        this.currentPeriod = null;
+
+        if (this.filterButton) {
+            this.filterButton.addEventListener('click', () => this.filterData());
+        }
+    }
+
+    // --- Ambil 4 nilai kaset dari baris "NCST:jumlah" (1CST/2CST/3CST/4CST) setelah "ADD CASH:" ---
+    parseAddCashCst(lines, addCashIdx) {
+        const cst = [0, 0, 0, 0];
+        let found = false;
+        for (let k = addCashIdx + 1; k <= addCashIdx + 6 && k < lines.length; k++) {
+            const m = lines[k].trim().match(/^(\d+)CST:(\d+)$/);
+            if (m) {
+                const slot = parseInt(m[1], 10);
+                if (slot >= 1 && slot <= 4) { cst[slot - 1] = parseInt(m[2], 10); found = true; }
+            } else if (found) {
+                break; // sudah lewat blok NCST, berhenti
+            }
+        }
+        return found ? cst : null;
+    }
+
+    // --- Cari semua marker REPLENISH valid ("ADD CASH:" + blok NCST ditemukan) ---
+    findValidMarkers(lines) {
+        const markers = [];
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trim() !== 'ADD CASH:') continue;
+            const cst = this.parseAddCashCst(lines, i);
+            if (!cst) continue;
+
+            let dateLabel = null;
+            for (let k = i - 1; k >= Math.max(0, i - 3); k--) {
+                const m = lines[k].match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+                if (m) { dateLabel = `${m[1]}/${m[2]}/${m[3].slice(-2)}`; break; }
+            }
+
+            markers.push({
+                addCashIndex: i,
+                date: dateLabel || '??/??/??',
+                init100: cst[0] + cst[1],
+                init50: cst[2] + cst[3]
+            });
+        }
+        return markers;
+    }
+
+    findReplenishmentPeriods(lines) {
+        const markers = this.findValidMarkers(lines);
+        const periods = [];
+
+        for (let i = 0; i < markers.length - 1; i++) {
+            const startIdx = markers[i].addCashIndex;
+            const endIdx = markers[i + 1].addCashIndex;
+
+            let hasDispense = false;
+            for (let j = startIdx + 1; j < endIdx; j++) {
+                if (lines[j].trim().indexOf('Request Count') === 0) { hasDispense = true; break; }
+            }
+            if (!hasDispense) continue;
+
+            periods.push({
+                startIndex: startIdx,
+                endIndex: endIdx,
+                startDate: markers[i].date,
+                endDate: markers[i + 1].date,
+                init100: markers[i].init100,
+                init50: markers[i].init50,
+                displayText: `${markers[i].date} - ${markers[i + 1].date}`
+            });
+        }
+
+        // Marker terakhir tetap dibentuk jadi periode walau tanpa penutup - label akhir
+        // = tanggal transaksi terakhir yang ditemukan (standar 6+1 mesin lain di app ini).
+        if (markers.length > 0) {
+            const lastMarker = markers[markers.length - 1];
+            const startIdx = lastMarker.addCashIndex;
+            const endIdx = lines.length;
+
+            let hasDispense = false;
+            for (let j = startIdx + 1; j < endIdx; j++) {
+                if (lines[j].trim().indexOf('Request Count') === 0) { hasDispense = true; break; }
+            }
+
+            if (hasDispense) {
+                const finalEndDate = crmHyosungLastTrxDate(lines, startIdx, endIdx) || lastMarker.date;
+                periods.push({
+                    startIndex: startIdx,
+                    endIndex: endIdx,
+                    startDate: lastMarker.date,
+                    endDate: null,
+                    init100: lastMarker.init100,
+                    init50: lastMarker.init50,
+                    displayText: `${lastMarker.date} - ${finalEndDate}`
+                });
+            }
+        }
+        return periods;
+    }
+
+    resolvePeriodBounds(lines, period = null) {
+        if (period) {
+            return {
+                start: period.startIndex + 1, end: period.endIndex - 1,
+                tsStart: reconCrmHyosungMarkerTimestamp(lines, period.startIndex),
+                tsEnd: (period.endIndex < lines.length) ? reconCrmHyosungMarkerTimestamp(lines, period.endIndex) : null
+            };
+        }
+        const markers = this.findValidMarkers(lines);
+        if (markers.length >= 2) {
+            const last = markers[markers.length - 1];
+            const prev = markers[markers.length - 2];
+            return {
+                start: prev.addCashIndex + 1, end: last.addCashIndex - 1,
+                tsStart: reconCrmHyosungMarkerTimestamp(lines, prev.addCashIndex),
+                tsEnd: reconCrmHyosungMarkerTimestamp(lines, last.addCashIndex)
+            };
+        }
+        if (markers.length === 1) {
+            return {
+                start: markers[0].addCashIndex + 1, end: lines.length - 1,
+                tsStart: reconCrmHyosungMarkerTimestamp(lines, markers[0].addCashIndex), tsEnd: null
+            };
+        }
+        return { start: 0, end: lines.length - 1, tsStart: null, tsEnd: null };
+    }
+
+    calculateDISP(lines, period = null) {
+        const { start, end, tsStart, tsEnd } = this.resolvePeriodBounds(lines, period);
+        let c1 = 0, c2 = 0, c3 = 0, c4 = 0;
+        for (let i = start; i <= end; i++) {
+            const trimmed = lines[i].trim();
+            if (trimmed.indexOf('Request Count') !== 0) continue;
+            if (!reconIsWithinPeriod(lines, i, tsStart, tsEnd, reconFindCrmHyosungTransactionTimestamp)) continue;
+
+            // Pakai "Dispense Count" (fisik riil, baris tepat setelah Request Count) - bukan
+            // Request Count (permintaan awal) - sama seperti fix presisi lembar Oki.
+            const dispLine = lines[i + 1];
+            const dm = dispLine && dispLine.trim().match(/^Dispense Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+            if (dm) {
+                c1 += parseInt(dm[1], 10); c2 += parseInt(dm[2], 10);
+                c3 += parseInt(dm[3], 10); c4 += parseInt(dm[4], 10);
+            } else {
+                // fallback kalau baris Dispense Count tidak ketemu persis di posisi +1
+                const m = trimmed.match(/Request Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+                if (m) {
+                    c1 += parseInt(m[1], 10); c2 += parseInt(m[2], 10);
+                    c3 += parseInt(m[3], 10); c4 += parseInt(m[4], 10);
+                }
+            }
+        }
+        return [c1, c2, c3, c4];
+    }
+
+    totalDisp100(totals) { return totals[0] + totals[1]; }
+    totalDisp50(totals) { return totals[2] + totals[3]; }
+
+    // --- Deposit (REVISI, tervalidasi 100% presisi ke rupiah thd 4 periode lewat laporan
+    // internal "Print Cash" milik log sendiri) ---
+    // AWALNYA dihitung dari "Store Count [c1,c2,c3,c4]" (lookup langsung, bracket 4-kolom) -
+    // TERNYATA UNDERCOUNT: field ini hanya mencatat lembar yang berhasil masuk ke kaset 1-4,
+    // TIDAK termasuk lembar yang disortir mesin ke kaset "MIX" (kondisi lembar kurang sempurna,
+    // tetap sah sbg setoran nasabah - dibuktikan lgs dari data: baris "Host Store: Stored" pada
+    // satu transaksi nyata menunjukkan total SEBENARNYA Rp2.850.000 sementara "Store Count"-nya
+    // cuma mencatat Rp200.000, selisihnya PERSIS sama dgn field "[MIX CASSETTE]" periode tsb).
+    //
+    // FIX: anchor ke baris "Host Store: Stored" (jam mentah ada langsung di baris yg sama) +
+    // baris "IDR100000:N"/"IDR50000:N" setelahnya - breakdown denominasi LENGKAP termasuk yang
+    // ke kaset MIX. Baris ini BISA muncul >1x per transaksi (by design - dikonfirmasi user:
+    // nasabah bisa melakukan store berkali-kali dalam 1 sesi krn ada limit lembar per-batch, ini
+    // normal dan SEMUA batch harus dihitung), TAPI kadang juga muncul sbg echo/duplikat identik
+    // dari batch yg SAMA (co: sekali sblm [Transaction record], sekali sesudahnya). Pembeda yang
+    // valid: daftar serial number di bawah "Stored Note" - kalau identik = batch yg sama (hitung
+    // 1x), kalau beda = batch yg genuinely berbeda (hitung semua). Kalau TIDAK ada "Stored Note"
+    // sama sekali = transaksi gagal/diretract (co: kasus nyata "Host Communication Down" ->
+    // "Reset" -> "Notes retracted:" yang ditemukan di log) - uangnya TIDAK jadi masuk, jangan
+    // dihitung sbg deposit.
+    extractHostStoreBlocks(lines, start, end) {
+        const blocks = [];
+        for (let i = start; i <= end; i++) {
+            const trimmed = lines[i].trim();
+            if (!trimmed.endsWith('Host Store: Stored')) continue;
+
+            let d100 = 0, d50 = 0, k = i + 1;
+            while (k <= end) {
+                const l = lines[k].trim();
+                const m100 = l.match(/^IDR100000\s*:\s*(\d+)$/);
+                const m50 = l.match(/^IDR50000\s*:\s*(\d+)$/);
+                if (m100) { d100 += parseInt(m100[1], 10); k++; continue; }
+                if (m50) { d50 += parseInt(m50[1], 10); k++; continue; }
+                break;
+            }
+            if (d100 + d50 === 0) continue;
+
+            // Cari "Stored Note" + kumpulkan serial multi-baris sampai ']' ditemukan. Window
+            // digenerouskan (300 baris) supaya transaksi besar (ratusan lembar) tetap tertangkap
+            // utuh - window kecil terbukti memotong daftar serial transaksi besar & merusak dedup.
+            let serialStr = '', foundStoredNote = false;
+            for (let j = k; j <= Math.min(end, k + 300); j++) {
+                const l = lines[j].trim();
+                if (l === 'Stored Note') { foundStoredNote = true; continue; }
+                if (!foundStoredNote) continue;
+                serialStr += l;
+                if (l.includes(']')) break;
+            }
+            if (!foundStoredNote) continue; // tanpa "Stored Note" = transaksi gagal/retract
+
+            const serialList = serialStr.replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean);
+            if (serialList.length === 0) continue; // tanpa serial = gagal/retract juga, jangan dihitung
+
+            const tm = lines[i].match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+            const ts = tm ? buildDateFromParts(tm[1], tm[2], tm[3], tm[4], tm[5], tm[6]) : null;
+
+            blocks.push({
+                line: i, d100, d50, amount: d100 * 100000 + d50 * 50000,
+                serials: serialList.slice().sort().join(','), ts
+            });
+        }
+        return blocks;
+    }
+
+    calculateDEP(lines, period = null) {
+        const { start, end, tsStart, tsEnd } = this.resolvePeriodBounds(lines, period);
+        const blocks = this.extractHostStoreBlocks(lines, start, end);
+        const seen = new Set();
+        let dep100 = 0, dep50 = 0;
+        for (const b of blocks) {
+            if (seen.has(b.serials)) continue; // duplikat/echo batch yg sama - hitung sekali saja
+            if (tsStart && b.ts && (b.ts < tsStart || (tsEnd && b.ts >= tsEnd))) continue;
+            seen.add(b.serials);
+            dep100 += b.d100; dep50 += b.d50;
+        }
+        return [dep100, dep50];
+    }
+
+    calculateINIT(lines, period = null) {
+        if (period) return [period.init100 || 0, period.init50 || 0];
+        const markers = this.findValidMarkers(lines);
+        if (markers.length === 0) return [0, 0];
+        const last = markers[markers.length - 1];
+        return [last.init100, last.init50];
+    }
+
+    calculateREM(lines, period = null) {
+        const [c1, c2, c3, c4] = this.calculateDISP(lines, period);
+        const [dep100, dep50] = this.calculateDEP(lines, period);
+        const [init100, init50] = this.calculateINIT(lines, period);
+        const rem100 = init100 - (c1 + c2) + dep100;
+        const rem50 = init50 - (c3 + c4) + dep50;
+        return [rem100, rem50];
+    }
+
+    findMachineID(lines) {
+        for (const line of lines) {
+            const m = line.match(/ATM ID\s*:\s*(\d+)/);
+            if (m) return m[1];
+        }
+        return "Not Found";
+    }
+
+    extractCashPresented(lines, period = null) {
+        const { start, end } = this.resolvePeriodBounds(lines, period);
+        const list = [];
+        let total = 0;
+        for (let i = start; i <= end; i++) {
+            const trimmed = lines[i].trim();
+            if (trimmed.indexOf('Request Count') !== 0) continue;
+            const dispLine = lines[i + 1];
+            const dm = dispLine && dispLine.trim().match(/^Dispense Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+            let c1, c2, c3, c4;
+            if (dm) {
+                c1 = parseInt(dm[1], 10); c2 = parseInt(dm[2], 10); c3 = parseInt(dm[3], 10); c4 = parseInt(dm[4], 10);
+            } else {
+                const m = trimmed.match(/Request Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+                if (!m) continue;
+                c1 = parseInt(m[1], 10); c2 = parseInt(m[2], 10); c3 = parseInt(m[3], 10); c4 = parseInt(m[4], 10);
+            }
+            const amount = (c1 + c2) * 100000 + (c3 + c4) * 50000;
+            if (amount > 0) { list.push(amount); total += amount; }
+        }
+        return { count: list.length, total, list };
+    }
+
+    // Konsisten dgn calculateDEP (lihat catatan lengkap di sana): pakai extractHostStoreBlocks +
+    // dedup berdasar serial, BUKAN "Store Count [c1,c2,c3,c4]" lagi (undercount krn kaset MIX).
+    extractStoredCount(lines, period = null) {
+        const { start, end } = this.resolvePeriodBounds(lines, period);
+        const blocks = this.extractHostStoreBlocks(lines, start, end);
+        const seen = new Set();
+        const list = [];
+        let total = 0;
+        for (const b of blocks) {
+            if (seen.has(b.serials)) continue;
+            seen.add(b.serials);
+            list.push(b.amount);
+            total += b.amount;
+        }
+        return { count: list.length, total, list };
+    }
+
+    displayPeriods() {
+        const periodDisplay = document.getElementById('crmHyosungPeriodDisplay');
+        if (!periodDisplay) return;
+
+        periodDisplay.innerHTML = '';
+        periodDisplay.classList.remove('hidden');
+
+        if (this.periods.length === 0) {
+            periodDisplay.innerHTML = '<span class="period-label"><span class="badge">PERIODE</span> Tidak ditemukan periode dengan transaksi dispense</span>';
+            return;
+        }
+
+        let defaultPeriodIndex = this.periods.length - 1;
+        if (this.periods.length > 1) {
+            const lastPeriod = this.periods[this.periods.length - 1];
+            if (!lastPeriod.endDate) {
+                for (let k = this.periods.length - 2; k >= 0; k--) {
+                    if (this.periods[k].endDate) { defaultPeriodIndex = k; break; }
+                }
+            }
+        }
+
+        this.periods.forEach((period, index) => {
+            const button = document.createElement('button');
+            button.textContent = period.displayText;
+            button.className = 'period-btn crmHyosung';
+
+            if (index === defaultPeriodIndex) {
+                button.classList.add('active');
+                this.currentPeriod = period;
+                this.updateSelectedPeriodUI(period);
+            } else if (this.currentPeriod && this.currentPeriod.displayText === period.displayText) {
+                button.classList.add('active');
+            }
+
+            button.addEventListener('click', () => {
+                this.currentPeriod = period;
+                document.querySelectorAll('#crmHyosungPeriodDisplay .period-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                this.updateSelectedPeriodUI(period);
+                this.analyzePeriod(period);
+            });
+
+            periodDisplay.appendChild(button);
+        });
+
+        if (this.currentPeriod) {
+            this.analyzePeriod(this.currentPeriod);
+        }
+    }
+
+    updateSelectedPeriodUI(period) {
+        const selectedDiv = document.getElementById('crmHyosungPeriodSelected');
+        const selectedText = document.getElementById('crmHyosungSelectedPeriodText');
+        if (selectedDiv && selectedText) {
+            selectedDiv.classList.remove('hidden');
+            selectedText.textContent = period.displayText;
+        }
+    }
+
+    filterData() {
+        if (!this.logInput) return;
+        const logInput = cleanAnsiCodes(this.logInput.value);
+        const lines = logInput.split('\n');
+        const machineID = this.findMachineID(lines);
+        this.machineDisplay.innerHTML = `<span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span> MACHINE: ${machineID}`;
+
+        this.periods = this.findReplenishmentPeriods(lines);
+        this.displayPeriods();
+    }
+
+    analyzePeriod(period) {
+        const logInput = cleanAnsiCodes(this.logInput.value);
+        const lines = logInput.split('\n');
+
+        const [c1, c2, c3, c4] = this.calculateDISP(lines, period);
+        const [dep100, dep50] = this.calculateDEP(lines, period);
+        const [init100, init50] = this.calculateINIT(lines, period);
+        const [rem100, rem50] = this.calculateREM(lines, period);
+
+        this.crmHyosungInit100.textContent = init100;
+        this.crmHyosungInit50.textContent = init50;
+        this.crmHyosungDisp100.textContent = this.totalDisp100([c1, c2, c3, c4]);
+        this.crmHyosungDisp50.textContent = this.totalDisp50([c1, c2, c3, c4]);
+        this.crmHyosungDep100.textContent = dep100;
+        this.crmHyosungDep50.textContent = dep50;
+        this.crmHyosungRem100.textContent = rem100;
+        this.crmHyosungRem50.textContent = rem50;
+
+        const initAmount = init100 * 100000 + init50 * 50000;
+        const dispAmount = this.totalDisp100([c1, c2, c3, c4]) * 100000 + this.totalDisp50([c1, c2, c3, c4]) * 50000;
+        const depAmount = dep100 * 100000 + dep50 * 50000;
+        const remAmount = rem100 * 100000 + rem50 * 50000;
+
+        this.crmHyosungInitAmount.textContent = initAmount.toLocaleString('id-ID');
+        this.crmHyosungDispAmount.textContent = dispAmount.toLocaleString('id-ID');
+        this.crmHyosungDepAmount.textContent = depAmount.toLocaleString('id-ID');
+        this.crmHyosungRemAmount.textContent = remAmount.toLocaleString('id-ID');
+
+        const cashPresented = this.extractCashPresented(lines, period);
+        this.crmHyosungCashPresentedCount.textContent = cashPresented.count;
+        this.crmHyosungCashPresentedTotal.textContent = cashPresented.total.toLocaleString('id-ID');
+        this.crmHyosungCashPresentedList.innerHTML = '';
+        cashPresented.list.forEach(amount => {
+            const li = document.createElement('li');
+            li.textContent = amount.toLocaleString('id-ID');
+            li.classList.add('py-1', 'border-b', 'border-slate-800/50');
+            this.crmHyosungCashPresentedList.appendChild(li);
+        });
+
+        const storedCountData = this.extractStoredCount(lines, period);
+        this.crmHyosungStoredCountCount.textContent = storedCountData.count;
+        this.crmHyosungStoredCountTotal.textContent = storedCountData.total.toLocaleString('id-ID');
+        this.crmHyosungStoredCountList.innerHTML = '';
+        storedCountData.list.forEach(amount => {
+            const li = document.createElement('li');
+            li.textContent = amount.toLocaleString('id-ID');
+            li.classList.add('py-1', 'border-b', 'border-slate-800/50');
+            this.crmHyosungStoredCountList.appendChild(li);
+        });
+
+        const phys100 = parseInt(this.crmHyosungPhys100.value) || 0;
+        const phys50 = parseInt(this.crmHyosungPhys50.value) || 0;
+        const totalPhys = phys100 * 100000 + phys50 * 50000;
+
+        if (this.crmHyosungPhys100.value === "" && this.crmHyosungPhys50.value === "") {
+            this.crmHyosungTotalPhysAmount.textContent = "MENUNGGU INPUT";
+            this.crmHyosungTotalPhysAmount.classList.add("text-sm");
+        } else {
+            this.crmHyosungTotalPhysAmount.textContent = totalPhys.toLocaleString('id-ID');
+            this.crmHyosungTotalPhysAmount.classList.remove("text-sm");
+        }
+
+        if (this.crmHyosungPhys100.value !== "" || this.crmHyosungPhys50.value !== "") {
+            updateReconciliationTable(phys100, rem100, "crmHyosungResPhys100");
+            updateReconciliationTable(phys50, rem50, "crmHyosungResPhys50");
+            updateReconciliationUI(totalPhys, remAmount, "crmHyosungTotalReconBox", "crmHyosungTotalReconResult", "crmHyosungExpression");
+        }
+    }
+}
+
+function crmHyosungLastTrxDate(logLines, startIdx, endIdx) {
+    return findLastMarkerDate(logLines, startIdx, endIdx,
+        (l) => l.trim().indexOf('Request Count') === 0 || l.trim().indexOf('Store Count') === 0,
+        (lines, idx) => {
+            const m = extractDateNearLine(lines, idx, [], /TANGGAL:\s*(\d{2}\/\d{2}\/\d{2})/, 25);
+            return m ? m[1] : null;
+        });
+}
+
 function okyLastTrxDate(logLines, startIdx, endIdx) {
     return findLastMarkerDate(logLines, startIdx, endIdx,
         (l) => l.trim().indexOf('Request Count') === 0 || l.trim() === 'Stored Count',
@@ -3120,6 +3748,103 @@ function summaryExtractOky(lines) {
     return { transactions, rplMarkers };
 }
 
+// ---------- CRM HYOSUNG (MODUL BARU) ----------
+// Meniru PERSIS marker & parsing dari calculateDISP/calculateDEP/findValidMarkers
+// (class DataFilterCRMHyosung) - marker "ADD CASH:" + baris "NCST:jumlah", dispense
+// "Request Count"+"Dispense Count [c1,c2,c3,c4]", deposit "Store Count [c1,c2,c3,c4]"
+// langsung 1 baris. Timestamp pakai jam MENTAH (konsisten dgn reconCrmHyosungMarkerTimestamp/
+// reconFindCrmHyosungTransactionTimestamp yg dipakai kalkulasi per-periode) - BUKAN struk
+// TANGGAL/WAKTU, supaya SUMMARY & hasil rekonsiliasi per-periode memakai basis jam yang sama.
+function summaryExtractCrmHyosung(lines) {
+    const transactions = [];
+    const rplMarkers = [];
+    const rawTsRegex = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/;
+
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() !== 'ADD CASH:') continue;
+        const cst = [0, 0, 0, 0];
+        let found = false;
+        for (let k = i + 1; k <= i + 6 && k < lines.length; k++) {
+            const m = lines[k].trim().match(/^(\d+)CST:(\d+)$/);
+            if (m) {
+                const slot = parseInt(m[1], 10);
+                if (slot >= 1 && slot <= 4) { cst[slot - 1] = parseInt(m[2], 10); found = true; }
+            } else if (found) break;
+        }
+        if (!found) continue;
+        const ts = reconCrmHyosungMarkerTimestamp(lines, i);
+        if (ts) {
+            const resetAmount = (cst[0] + cst[1]) * 100000 + (cst[2] + cst[3]) * 50000;
+            rplMarkers.push({ ts, label: 'REPLENISH', resetAmount });
+        }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+
+        if (trimmed.indexOf('Request Count') === 0) {
+            const dispLine = lines[i + 1];
+            const dm = dispLine && dispLine.trim().match(/^Dispense Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+            const m = dm || trimmed.match(/Request Count\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+            if (m) {
+                const c1 = parseInt(m[1], 10), c2 = parseInt(m[2], 10), c3 = parseInt(m[3], 10), c4 = parseInt(m[4], 10);
+                const amount = (c1 + c2) * 100000 + (c3 + c4) * 50000;
+                if (amount > 0) {
+                    let ts = null;
+                    for (let k = i; k >= Math.max(0, i - 25); k--) {
+                        const tm = lines[k].match(rawTsRegex);
+                        if (tm) { ts = buildDateFromParts(tm[1], tm[2], tm[3], tm[4], tm[5], tm[6]); break; }
+                    }
+                    if (ts) transactions.push({ ts, type: 'dispense', amount, lembar100: c1 + c2, lembar50: c3 + c4, lembar: c1 + c2 + c3 + c4 });
+                }
+            }
+        }
+    }
+
+    // Deposit (REVISI - lihat catatan lengkap di calculateDEP class DataFilterCRMHyosung):
+    // anchor "Host Store: Stored" + dedup berdasar serial "Stored Note", BUKAN "Store Count
+    // [c1,c2,c3,c4]" lagi (undercount krn tidak menangkap lembar yg disortir ke kaset MIX).
+    // Loop TERPISAH & SEQUENTIAL (bukan bersarang di loop dispense di atas) supaya tetap O(n).
+    const seenSerials = new Set();
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (!trimmed.endsWith('Host Store: Stored')) continue;
+
+        let d100 = 0, d50 = 0, k = i + 1;
+        while (k < lines.length) {
+            const l = lines[k].trim();
+            const m100 = l.match(/^IDR100000\s*:\s*(\d+)$/);
+            const m50 = l.match(/^IDR50000\s*:\s*(\d+)$/);
+            if (m100) { d100 += parseInt(m100[1], 10); k++; continue; }
+            if (m50) { d50 += parseInt(m50[1], 10); k++; continue; }
+            break;
+        }
+        if (d100 + d50 === 0) continue;
+
+        let serialStr = '', foundStoredNote = false;
+        for (let j = k; j <= Math.min(lines.length - 1, k + 300); j++) {
+            const l = lines[j].trim();
+            if (l === 'Stored Note') { foundStoredNote = true; continue; }
+            if (!foundStoredNote) continue;
+            serialStr += l;
+            if (l.includes(']')) break;
+        }
+        if (!foundStoredNote) continue; // tanpa "Stored Note" = transaksi gagal/retract
+
+        const serialList = serialStr.replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean);
+        if (serialList.length === 0) continue;
+        const serialKey = serialList.slice().sort().join(',');
+        if (seenSerials.has(serialKey)) continue; // duplikat/echo batch yg sama
+        seenSerials.add(serialKey);
+
+        const amount = d100 * 100000 + d50 * 50000;
+        const tm = lines[i].match(rawTsRegex);
+        const ts = tm ? buildDateFromParts(tm[1], tm[2], tm[3], tm[4], tm[5], tm[6]) : null;
+        if (ts) transactions.push({ ts, type: 'deposit', amount, lembar100: d100, lembar50: d50, lembar: d100 + d50 });
+    }
+    return { transactions, rplMarkers };
+}
+
 // ---------- HYOSUNG ----------
 // Meniru marker 'Request Count' (dispense) & 'ADD CASH:' (RPL) yg sudah dipakai findHyosungPeriods
 // FIX Poin 2 (ATM): Hyosung punya field "Denomination" eksplisit di log - itu kebenaran
@@ -3386,6 +4111,7 @@ const SUMMARY_EXTRACTORS = {
     ncr: summaryExtractNcr,
     wincor: summaryExtractWincor,
     jalin: summaryExtractJalin,
+    crmHyosung: summaryExtractCrmHyosung,
 };
 
 // FITUR BARU: 2 set label kuadran (4 = default, 8 = mode detail via toggle user) + helper
@@ -3747,6 +4473,7 @@ const SUMMARY_MACHINE_CONFIG = {
     wincor: { pageId: 'page-wincor', textareaId: 'wincorLogInput', label: 'ATM WINCOR', isTwoWay: false, color: '#2E8EFF' },
     ncr: { pageId: 'page-ncr', textareaId: 'ncrLogInput', label: 'ATM NCR', isTwoWay: false, color: '#2E8EFF' },
     jalin: { pageId: 'page-jalin', textareaId: 'jalinLogInput', label: 'ATM JALIN', isTwoWay: false, color: '#FF2A3D' },
+    crmHyosung: { pageId: 'page-crm-hyosung', textareaId: 'crmHyosungLogInput', label: 'CRM HYOSUNG', isTwoWay: true, color: '#FF7A29' },
 };
 
 let summaryChartInstance = null;

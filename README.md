@@ -4,7 +4,7 @@
 Aplikasi **REKONSILIATOR** adalah sistem otomatis untuk analisis dan rekonsiliasi data log ATM berbasis EJ Log. Aplikasi ini dirancang khusus untuk kebutuhan **BG Jambi** dengan fitur periode filter cerdas yang hanya menampilkan periode dengan transaksi dispense.
 
 ## 🎯 Fitur Utama
-1. **Multi-Vendor Support**: CRM Hitachi, CRM Dinabold, CRM Oki, Hyosung, Wincor, NCR, ATM Jalin (7 mesin)
+1. **Multi-Vendor Support**: CRM Hitachi, CRM Dinabold, CRM Oki, CRM Hyosung, Hyosung, Wincor, NCR, ATM Jalin (8 mesin)
 2. **Period Filter Enhanced**: Sistem otomatis mendeteksi dan memfilter periode berdasarkan transaksi dispense, dengan fallback label periode konsisten di ketujuh mesin (tanggal transaksi terakhir, bukan lagi "Sekarang")
 3. **Multi-File Upload dgn Auto-Sort & Dedup**: Upload beberapa file log sekaligus (urutan bebas, boleh acak) — sistem otomatis mengurutkan secara kronologis DAN membuang baris/transaksi duplikat
 4. **Summary Transaksi**: Tombol "SUMMARY" di tiap halaman mesin — rekap harian, distribusi jam, Daily Rate (mean/median), Net Setor-Tarik (khusus CRM), grafik Saldo & Net harian, dari **seluruh transaksi di log**, lintas periode (detail di bawah)
@@ -33,7 +33,7 @@ Klik tombol **SUMMARY** (pojok kanan-atas, sejajar tombol Back) di halaman mesin
 - Tabel rekap harian: Saldo Awal / Dispense / Saldo Akhir (lembar) + Nominal Dispense
 - Grafik Nominal Harian: batang Saldo & Dispense + garis Net (Saldo − Pengeluaran)
 
-**Untuk CRM** (Hitachi/Dinabold/Oki) — 2 arah transaksi, jadi ada tambahan:
+**Untuk CRM** (Hitachi/Dinabold/Oki/Hyosung) — 2 arah transaksi, jadi ada tambahan:
 - Kuadran jam menampilkan **Net (Setor − Tarik)** per kuadran — positif (hijau) = dominan setor, negatif (merah) = dominan tarik; keterangan di bawahnya adalah **total transaksi** kuadran tsb (bukan lembar, karena lembar net tidak menunjukkan komposisi 50rb/100rb)
 - Section tersendiri **"Daily Rate"**: 3 kolom (Dispense/Deposit/Net), tiap kolom pecah lembar per denominasi (50rb/100rb) termasuk Net, untuk mean & median. Net = Deposit − Dispense (selaras, dihitung dari angka Dispense/Deposit yang sama-sama sudah dibulatkan ke kelipatan 50rb, sehingga 3 angka di kartu selalu bisa dicocokkan manual)
 - Tabel rekap harian pecah kolom per denominasi (Dispense 50rb/100rb/Total, Deposit 50rb/100rb/Total) + kolom Net Transaksi (nominal saja) di paling kanan
@@ -70,7 +70,7 @@ Berlaku di **ketujuh mesin**. Kalau periode terakhir/tunggal tidak punya penutup
 
 ### 3. Input Data Fisik
 + Masukkan data fisik remaining sesuai hasil hitung fisik
-+ Untuk CRM (Hitachi, Dinabold & Oki): input per denominasi (100.000 & 50.000)
++ Untuk CRM (Hitachi, Dinabold, Oki & Hyosung): input per denominasi (100.000 & 50.000)
 + Untuk ATM lainnya: input total fisik remaining
 
 ### 4. Pilih Periode Replenish
