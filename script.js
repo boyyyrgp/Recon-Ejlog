@@ -363,6 +363,10 @@ function resetFormOky() {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';
     });
+    ['okyRetrackLembar', 'okyRetrackAmount'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
 
     const totalPhys = document.getElementById('okyTotalPhysAmount');
     if (totalPhys) {
@@ -432,6 +436,10 @@ function resetFormCrmHyosung() {
         if (el) el.textContent = '0';
     });
     ['crmHyosungInitAmount', 'crmHyosungDispAmount', 'crmHyosungDepAmount', 'crmHyosungRemAmount'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+    ['crmHyosungRetrackLembar', 'crmHyosungRetrackAmount'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';
     });
@@ -2414,6 +2422,8 @@ class DataFilterCRMOky {
         this.okyStoredCountCount = document.getElementById('okyStoredCountCount');
         this.okyStoredCountTotal = document.getElementById('okyStoredCountTotal');
         this.okyStoredCountList = document.getElementById('okyStoredCountList');
+        this.okyRetrackLembar = document.getElementById('okyRetrackLembar');
+        this.okyRetrackAmount = document.getElementById('okyRetrackAmount');
 
         this.periods = [];
         this.currentPeriod = null;
@@ -2464,6 +2474,33 @@ class DataFilterCRMOky {
         return markers;
     }
 
+    // --- RETRACK (BARU) - meniru pola dnRetrackLembar milik Dinabold: cari laporan "---Settlement"
+    // TERDEKAT SEBELUM marker replenishment BERIKUTNYA (snapshot di awal kunjungan berikutnya,
+    // sebelum replenishment-nya sendiri terjadi, jadi masih mencerminkan tally periode SEBELUMnya
+    // secara utuh - prinsip sama dgn cara ambil DISP/DEP dari Print Cash Hyosung). Beda dgn
+    // Dinabold: Oki kebetulan punya rincian PER-DENOMINASI (tabel "NO DENOM ...+RET=TOTAL"), jadi
+    // bisa ditampilkan lembar SEKALIGUS rupiah, bukan cuma lembar spt Dinabold. Kalau periode masih
+    // berjalan (belum ada marker penutup) atau laporan tidak ketemu, return null -> tampil "-".
+    findRetrackForPeriod(lines, nextMarkerReplIndex) {
+        if (nextMarkerReplIndex == null) return null;
+        let settleIdx = -1;
+        for (let k = nextMarkerReplIndex - 1; k >= 0; k--) {
+            if (lines[k].trim().startsWith('---Settlement')) { settleIdx = k; break; }
+        }
+        if (settleIdx === -1) return null;
+
+        let ret50 = null, ret100 = null;
+        for (let k = settleIdx; k < Math.min(lines.length, settleIdx + 40); k++) {
+            const m50 = lines[k].match(/IDR\s*50000\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+            const m100 = lines[k].match(/IDR\s*100000\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+            if (m50) ret50 = parseInt(m50[3], 10);
+            if (m100) ret100 = parseInt(m100[3], 10);
+        }
+        if (ret50 === null && ret100 === null) return null;
+        ret50 = ret50 || 0; ret100 = ret100 || 0;
+        return { lembar: ret50 + ret100, amount: ret50 * 50000 + ret100 * 100000 };
+    }
+
     findReplenishmentPeriods(lines) {
         const markers = this.findValidMarkers(lines);
         const periods = [];
@@ -2478,15 +2515,37 @@ class DataFilterCRMOky {
             }
             if (!hasDispense) continue;
 
-            periods.push({
+            const candidate = {
                 startIndex: startIdx,
                 endIndex: endIdx,
                 startDate: markers[i].date,
                 endDate: markers[i + 1].date,
                 init100: markers[i].init100,
                 init50: markers[i].init50,
-                displayText: `${markers[i].date} - ${markers[i + 1].date}`
-            });
+                displayText: `${markers[i].date} - ${markers[i + 1].date}`,
+                retrack: this.findRetrackForPeriod(lines, markers[i + 1].replIndex)
+            };
+
+            // FIX (bug periode "hantu"): file EJ Oki kadang berisi blok Replenishment yang
+            // keduplikasi (kejadian nyata ditemukan: 2 marker Date & Serial No. identik persis,
+            // ~42rb baris terpisah). Ini bikin tsStart==tsEnd utk periode di antaranya, shg
+            // pengaman jam yg sudah ada (reconIsWithinPeriod di calculateDISP/DEP) otomatis
+            // menolak SEMUA transaksi (window nol-lebar) meski teks "Request Count" mentahnya ada
+            // (makanya hasDispense di atas tetap true - itu cuma cek teks, belum lewat validasi jam).
+            // PERNAH dicoba fix dgn skip marker yg timestamp-nya duplikat, TAPI TERBUKTI SALAH:
+            // duplikasi di file Oki ternyata tidak rapi terbungkus pas di antara 2 marker (ada
+            // transaksi yg echo-nya nyebar sampai ke rentang periode lain juga), jadi skip-marker
+            // malah bikin double-count (diverifikasi: hasil combined 581jt vs ground truth
+            // settlement asli 428,2jt - hasil fix yg salah itu LEBIH BESAR, bukan sama). Jadi
+            // TIDAK mengubah logika pencarian marker/batas periode/kalkulasi sama sekali - cukup
+            // JANGAN tampilkan periode ini sbg pilihan kalau hasil akhirnya (setelah pengaman jam
+            // yg sudah ada bekerja) genuinely nol total. Periode lain semuanya tidak tersentuh.
+            const dispTotals = this.calculateDISP(lines, candidate);
+            const depTotals = this.calculateDEP(lines, candidate);
+            const totalCheck = dispTotals.reduce((a, b) => a + b, 0) + depTotals.reduce((a, b) => a + b, 0);
+            if (totalCheck === 0) continue;
+
+            periods.push(candidate);
         }
 
         // FIX Poin 1 (standarisasi label periode tanpa penutup): marker terakhir tetap
@@ -2510,7 +2569,8 @@ class DataFilterCRMOky {
                     endDate: null,
                     init100: lastMarker.init100,
                     init50: lastMarker.init50,
-                    displayText: `${lastMarker.date} - ${finalEndDate}`
+                    displayText: `${lastMarker.date} - ${finalEndDate}`,
+                    retrack: null // periode masih berjalan, belum ada laporan kunjungan berikutnya
                 });
             }
         }
@@ -2811,6 +2871,14 @@ class DataFilterCRMOky {
             this.okyStoredCountList.appendChild(li);
         });
 
+        // RETRACK (BARU) - murni informasi, TIDAK menyentuh calculateREM/DISP/DEP di atas sama sekali
+        if (this.okyRetrackLembar) {
+            this.okyRetrackLembar.textContent = period.retrack ? period.retrack.lembar : '-';
+        }
+        if (this.okyRetrackAmount) {
+            this.okyRetrackAmount.textContent = period.retrack ? period.retrack.amount.toLocaleString('id-ID') : '-';
+        }
+
         const phys100 = parseInt(this.okyPhys100.value) || 0;
         const phys50 = parseInt(this.okyPhys50.value) || 0;
         const totalPhys = phys100 * 100000 + phys50 * 50000;
@@ -2903,6 +2971,8 @@ class DataFilterCRMHyosung {
         this.crmHyosungStoredCountCount = document.getElementById('crmHyosungStoredCountCount');
         this.crmHyosungStoredCountTotal = document.getElementById('crmHyosungStoredCountTotal');
         this.crmHyosungStoredCountList = document.getElementById('crmHyosungStoredCountList');
+        this.crmHyosungRetrackLembar = document.getElementById('crmHyosungRetrackLembar');
+        this.crmHyosungRetrackAmount = document.getElementById('crmHyosungRetrackAmount');
 
         this.periods = [];
         this.currentPeriod = null;
@@ -2952,6 +3022,46 @@ class DataFilterCRMHyosung {
         return markers;
     }
 
+    // --- RETRACK (BARU) - meniru pola dnRetrackLembar Dinabold: cari laporan "Print Cash" TERDEKAT
+    // SEBELUM marker ADD CASH BERIKUTNYA (snapshot di awal kunjungan berikutnya, sebelum ADD CASH
+    // itu sendiri terjadi - prinsip sama dgn cara ambil ground-truth DISP/DEP dari Print Cash dulu
+    // saat audit). Hyosung kebetulan punya rincian PER-DENOMINASI lengkap (blok "[RETRACT
+    // CASSETTE]"), jadi bisa ditampilkan lembar SEKALIGUS rupiah (beda dgn Dinabold yg cuma lembar
+    // krn datanya memang tidak merinci denom). Kalau periode masih berjalan (belum ada marker
+    // penutup) atau laporan tak ketemu sama sekali, return null -> tampil "-" di UI.
+    findRetrackForPeriod(lines, nextMarkerAddCashIndex) {
+        if (nextMarkerAddCashIndex == null) return null;
+        let printCashIdx = -1;
+        for (let k = nextMarkerAddCashIndex - 1; k >= 0; k--) {
+            if (lines[k].includes('Print Cash: MACHINE')) { printCashIdx = k; break; }
+        }
+        if (printCashIdx === -1) return null;
+
+        let lembar = null;
+        for (let k = printCashIdx; k < Math.min(lines.length, printCashIdx + 40); k++) {
+            const m = lines[k].match(/RETRACT CASSETTE COUNT\s*:\s*(\d+)/);
+            if (m) { lembar = parseInt(m[1], 10); break; }
+        }
+        if (lembar === null) return null;
+        if (lembar === 0) return { lembar: 0, amount: 0 };
+
+        // rincian per-denominasi ada di blok "[RETRACT CASSETTE]" (kalau ada isinya)
+        let amount = null;
+        for (let k = printCashIdx; k < Math.min(lines.length, printCashIdx + 60); k++) {
+            if (!lines[k].includes('[RETRACT CASSETTE]')) continue;
+            amount = 0;
+            for (let j = k + 1; j < Math.min(lines.length, k + 10); j++) {
+                const m50 = lines[j].match(/IDR\s*50K\s+(\d+)/);
+                const m100 = lines[j].match(/IDR\s*100K\s+(\d+)/);
+                if (m50) amount += parseInt(m50[1], 10) * 50000;
+                if (m100) amount += parseInt(m100[1], 10) * 100000;
+                if (lines[j].includes('TOTAL')) break;
+            }
+            break;
+        }
+        return { lembar, amount };
+    }
+
     findReplenishmentPeriods(lines) {
         const markers = this.findValidMarkers(lines);
         const periods = [];
@@ -2973,7 +3083,8 @@ class DataFilterCRMHyosung {
                 endDate: markers[i + 1].date,
                 init100: markers[i].init100,
                 init50: markers[i].init50,
-                displayText: `${markers[i].date} - ${markers[i + 1].date}`
+                displayText: `${markers[i].date} - ${markers[i + 1].date}`,
+                retrack: this.findRetrackForPeriod(lines, markers[i + 1].addCashIndex)
             });
         }
 
@@ -2998,7 +3109,8 @@ class DataFilterCRMHyosung {
                     endDate: null,
                     init100: lastMarker.init100,
                     init50: lastMarker.init50,
-                    displayText: `${lastMarker.date} - ${finalEndDate}`
+                    displayText: `${lastMarker.date} - ${finalEndDate}`,
+                    retrack: null // periode masih berjalan, belum ada laporan kunjungan berikutnya
                 });
             }
         }
@@ -3325,6 +3437,14 @@ class DataFilterCRMHyosung {
             li.classList.add('py-1', 'border-b', 'border-slate-800/50');
             this.crmHyosungStoredCountList.appendChild(li);
         });
+
+        // RETRACK (BARU) - murni informasi, TIDAK menyentuh calculateREM/DISP/DEP sama sekali
+        if (this.crmHyosungRetrackLembar) {
+            this.crmHyosungRetrackLembar.textContent = period.retrack ? period.retrack.lembar : '-';
+        }
+        if (this.crmHyosungRetrackAmount) {
+            this.crmHyosungRetrackAmount.textContent = (period.retrack && period.retrack.amount !== null) ? period.retrack.amount.toLocaleString('id-ID') : '-';
+        }
 
         const phys100 = parseInt(this.crmHyosungPhys100.value) || 0;
         const phys50 = parseInt(this.crmHyosungPhys50.value) || 0;

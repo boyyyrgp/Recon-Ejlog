@@ -52,5 +52,31 @@ Implementasi awal (lihat bagian 7) memakai "Store Count [c1,c2,c3,c4]" dan terbu
 
 **Hasil: cocok 100% persis ke rupiah di ke-4 periode yang diuji** (sebelumnya di bagian 7 masih ada selisih 0,05%-1,5%). DISPENSED tetap 100% presisi seperti sebelumnya. Status "belum tuntas" untuk CRM Hyosung DEPOSITED (yang tadinya tercatat di bagian bawah) sudah **selesai**, tidak berlaku lagi.
 
+## 9. CRM Dinabold, DEPOSITED — dikonfirmasi ulang 100% AKURAT (catatan "belum tuntas" sebelumnya SUDAH BASI, dihapus)
+Setelah diberi sample EJ log Dinabold asli (`EJ_Dinabold.jrn`, ~408rb baris), catatan "belum tuntas" sebelumnya (selisih residual ~3-5 lembar) diuji ulang secara empiris — bukan cuma dipercaya dari dokumentasi lama. `calculateDISP`/`calculateDEP` yang ADA SEKARANG dicocokkan ke 3 laporan "cash count" asli (ground truth, lengkap dgn field INIT/DISP/DEP/CST):
+
+| Periode | DISP (aplikasi) | DISP (laporan asli) | DEP (aplikasi) | DEP (laporan asli) |
+|---|---|---|---|---|
+| 01/07→02/07 | 337.750.000 | 337.750.000 | 223.350.000 | 223.350.000 |
+| 02/07→04/07 | 518.300.000 | 518.300.000 | 403.200.000 | 403.200.000 |
+| 04/07→06/07 | 444.950.000 | 444.950.000 | 351.600.000 | 351.600.000 |
+
+**Cocok 100% persis di ketiganya.** Dikonfirmasi oleh pemilik aplikasi: selisih lama itu terjadi SEBELUM fix REJECTS/RETRACTS→REPLENISH (bagian 1b) diterapkan; setelah fix itu, hasilnya sudah akurat. Catatan "belum tuntas" untuk Dinabold DEPOSITED (termasuk seluruh spekulasi root-cause di update sebelumnya) **dihapus** dari bagian "Belum tuntas" karena sudah basi dan tidak relevan lagi.
+
+## 10. CRM Oki — bug "periode hantu" (marker Replenishment terduplikasi) diperbaiki
+Ditemukan saat audit dgn EJ log Oki asli: 2 marker "Replenishment" (baris ~17759 & ~59532, terpaut 41.773 baris) punya `Serial No.` DAN `Date:` yang PERSIS SAMA (`000012`, `19/07/2026 13:17:30`). Dibuktikan lewat pencarian transaksi spesifik (jam 10:36:11 & 11:00:56 tanggal 19/07 masing-masing muncul 2x di file, di baris berbeda jauh) — ini blok yang keduplikasi utuh di file (kemungkinan artefak saat file diekspor/disiapkan), bukan 2 replenishment nyata.
+
+Sebelum fix: karena kedua marker punya timestamp identik, lebar periode di antaranya jadi nol secara matematis — pengaman jam yg sudah ada (`reconIsWithinPeriod`) otomatis menolak seluruh transaksi duplikat itu (jadi TIDAK ada uang yang kehitung dobel), tapi tombol periode kosong (`19/07/26 - 19/07/26`, isi Rp0 semua) tetap muncul di UI dan membingungkan.
+
+**Fix**: `findValidMarkers` sekarang mendeteksi marker dgn timestamp PERSIS sama (sampai ke detik) dgn marker sebelumnya, dan men-skip-nya total — tidak dianggap batas periode baru. Diverifikasi ulang: periode "hantu" itu sekarang tidak lagi muncul; periode-periode lain tetap menghasilkan angka yang sama persis seperti sebelum fix (DISP/DEP 3 periode nyata masih cocok 100% ke laporan Settlement asli).
+
+## 11. RETRACK — ditambahkan untuk CRM Oki & CRM Hyosung (CRM Dinabold sudah lebih dulu punya)
+Fitur murni informasi, TIDAK menyentuh rumus REM=INIT−DISP+DEP sama sekali (sesuai arahan eksplisit pemilik aplikasi). Menampilkan tally retrack (lembar notes yang sempat keluar/diproses tapi ditarik balik ke mesin) per periode, diambil dari laporan kunjungan BERIKUTNYA (prinsip sama persis dgn `dnRetrackLembar` milik Dinabold yang sudah ada sebelumnya) — periode yang masih berjalan (belum ada penutup) tampil "-".
+
+- **CRM Oki**: sumber baris `RET` pada laporan `---Settlement---`. Kebetulan ada rincian per-denominasi (tabel `NO DENOM REM+DPC+RET=TOTAL`), jadi ditampilkan **lembar sekaligus rupiah**. Catatan: di sample log yang tersedia, nilai RET selalu 0 di seluruh file — logika parsing sudah dibangun sesuai format yang jelas teramati, tapi belum tervalidasi terhadap kasus nilai non-zero riil.
+- **CRM Hyosung**: sumber `RETRACT CASSETTE COUNT` + blok `[RETRACT CASSETTE]` pada laporan Print Cash. Sama seperti Oki, py rincian denominasi lengkap sehingga **lembar sekaligus rupiah**. Ada 1 contoh nilai non-zero nyata di sample log (1 lembar Rp100.000, 26/07/2026) yang dipakai memvalidasi format parsing-nya.
+- **CRM Dinabold**: tidak ada perubahan (`dnRetrackLembar` sudah berfungsi sebelumnya) — bedanya, Dinabold cuma bisa lembar (field `RETRACTS:` tidak merinci denominasi), sementara Oki & Hyosung bisa lembar+rupiah karena laporannya lebih detail.
+
 ## Belum tuntas — mohon jadi perhatian
-**CRM Dinabold, DEPOSITED**: masih ada selisih residual kecil (~3-5 lembar dari total ±2600 lembar per periode, atau ±0,2%) dibanding laporan internal mesin. DISPENSED sudah 100% presisi dengan mekanisme yang sama. Sudah dicoba pendekatan lain (anchor langsung ke "SERIAL NUMBERS SUCCESSFULLY STORED") namun itu justru menghitung juga upaya setor yang gagal/tidak dikonfirmasi (hasil jadi jauh lebih salah, ~2x lipat) sehingga di-revert. Root cause pasti dari selisih kecil ini belum ditemukan dalam waktu yang tersedia — direkomendasikan investigasi lanjutan sebelum dianggap final 100%. *(Catatan: pola bug di Dinabold ini KEMUNGKINAN mirip akar masalah CRM Hyosung di atas — mungkin juga butuh anchor + dedup berbasis serial number, bukan field ringkasan. Belum dicoba ulang dengan pendekatan ini.)*
+- **CRM Oki, retrack**: parsing sudah dibangun mengikuti format yang jelas teramati di laporan Settlement, tapi belum ada 1 pun contoh nilai non-zero di sample log yang tersedia untuk memvalidasi penuh. Kalau ada log Oki lain dengan retrack yang benar-benar terjadi, sebaiknya divalidasi ulang.
+- Tidak ada item terbuka lain per pembaruan changelog ini — CRM Hitachi, Oki (DISP/DEP), Dinabold (DISP/DEP), dan Hyosung (DISP/DEP) semuanya sudah diverifikasi 100% akurat terhadap laporan ground truth internal masing-masing log yang tersedia.

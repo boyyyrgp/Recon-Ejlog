@@ -876,6 +876,17 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <!-- RETRACK (BARU) - lembar & rupiah (Oki punya rincian per-denominasi,
+                             beda dgn Dinabold yg cuma lembar), diambil dari laporan Settlement
+                             kunjungan berikutnya. Di luar rumus REM - murni informasi. Periode
+                             yg masih berjalan (belum ada penutup) tampil "-". -->
+                        <div class="mt-3 pt-3 border-t border-slate-700/40 px-8 pb-3 flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-500 tracking-widest uppercase">Retrack (lembar / rupiah)</span>
+                            <span class="flex items-center gap-2">
+                                <span id="okyRetrackLembar" class="text-xs font-mono font-black text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-md min-w-[2.5rem] text-center">0</span>
+                                <span id="okyRetrackAmount" class="text-xs font-mono font-black text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-md min-w-[4.5rem] text-center">0</span>
+                            </span>
+                        </div>
                     </div>
 
                     <!-- LISTS (Cash Presented & Stored Count) -->
@@ -1074,6 +1085,17 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <!-- RETRACK (BARU) - lembar & rupiah (Hyosung punya rincian per-denominasi
+                             lengkap via blok "[RETRACT CASSETTE]"), diambil dari laporan Print Cash
+                             kunjungan berikutnya. Di luar rumus REM - murni informasi. Periode yg
+                             masih berjalan (belum ada penutup) tampil "-". -->
+                        <div class="mt-3 pt-3 border-t border-slate-700/40 px-8 pb-3 flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-500 tracking-widest uppercase">Retrack (lembar / rupiah)</span>
+                            <span class="flex items-center gap-2">
+                                <span id="crmHyosungRetrackLembar" class="text-xs font-mono font-black text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-md min-w-[2.5rem] text-center">0</span>
+                                <span id="crmHyosungRetrackAmount" class="text-xs font-mono font-black text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-md min-w-[4.5rem] text-center">0</span>
+                            </span>
+                        </div>
                     </div>
 
                     <!-- LISTS (Cash Presented & Stored Count) -->
