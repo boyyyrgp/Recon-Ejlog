@@ -649,7 +649,16 @@ async function extractZipContents(file) {
         const allFiles = [...textFiles, ...otherFiles];
 
         for (const { filename, fileEntry } of allFiles) {
-            if (totalChars > 10000000) break; // batas ~10MB total, sama seperti sebelumnya
+            // FIX (laporan: isi ZIP cuma kebaca sebagian): baris ini DULU ada
+            // `if (totalChars > 10000000) break;` - begitu total teks gabungan lewat ~10MB,
+            // sisa sub-file yang BELUM diproses langsung ditinggalkan tanpa dicoba dibaca sama
+            // sekali, TAPI fungsi tetap melapor success:true & skippedCount:0 - jadi hilang
+            // tanpa jejak/peringatan apa pun. Dibuktikan lewat simulasi 7 file @2MB (ukuran
+            // senyatanya spt file harian TID 161084): cuma 5 dari 7 file yang lolos, 2 sisanya
+            // hilang senyap. Batas ini juga TIDAK ada di jalur upload file langsung (non-ZIP),
+            // padahal itu bisa menampung banyak file tanpa masalah - jadi ZIP diperlakukan
+            // lebih ketat drpd upload langsung utk data yang sama persis. Dihapus supaya upload
+            // ZIP konsisten dgn upload langsung: sebanyak apapun sub-file, semua dicoba dibaca.
             try {
                 const content = await fileEntry.async('text');
                 // Lewati file biner/non-teks yg gagal terbaca bermakna (mis. hasil decode kosong

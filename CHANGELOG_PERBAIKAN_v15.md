@@ -1,7 +1,7 @@
-# CHANGELOG PERBAIKAN v15 — Konsistensi Kartu ATM ID / TID
+# CHANGELOG PERBAIKAN v15
 
 **Tanggal:** 4 September 2026
-**Trigger:** Laporan user — kartu "ATM ID" di halaman HYOSUNG ANALYSIS menampilkan "Not Found", padahal modal SUMMARY (judul "SUMMARY TRANSAKSI — TID xxxxxx") berhasil menampilkan TID yang benar untuk file log yang sama persis.
+**Isi:** (§1–§7) Konsistensi kartu ATM ID/TID di 3 mesin. (§8) Batas ukuran tersembunyi pada upload ZIP yang menyebabkan sebagian sub-file tidak terbaca.
 **Prinsip kerja perbaikan:** aditif (fallback) saja. TIDAK mengubah satu pun logika perhitungan ADD CASH/DISPENSE/DEPOSITED/REMAINING, deteksi periode, atau proses merge-dedup multi-file. Pola pencarian ID yang lama selalu tetap dicoba lebih dulu di urutan yang sama seperti sebelumnya — pola baru hanya jadi jaring pengaman kalau pola lama gagal ketemu.
 
 ---
@@ -38,9 +38,9 @@
 - **Jalin** — punya fungsi TID sendiri (`findJalinTID`, format "TID=..."), dan SUMMARY sudah punya pengecualian khusus untuk memanggil fungsi yang sama.
 - **CRM Dinabold, CRM Oki, CRM Hyosung** — `findMachineID()` masing-masing class sudah dari awal mencari pola `"ATM ID :"` yang sama dengan SUMMARY.
 
-## 5. Cakupan perubahan (dikonfirmasi lewat diff baris-per-baris terhadap file asli)
+## 5. Cakupan perubahan §1–§3 (dikonfirmasi lewat diff baris-per-baris terhadap file asli)
 
-Hanya 3 fungsi di atas (§1–§3) yang berubah, total 3 blok fallback ditambahkan, nol baris lama dihapus/diubah urutannya. Tidak ada perubahan di `calculateDISP`, `calculateDEP`, `calculateINIT`, `calculateREM`, deteksi periode/marker, proses merge-sort-dedup, maupun `SUMMARY_EXTRACTORS`/modal SUMMARY. `index.html`, `style.css`, dan `README.md` tidak disentuh sama sekali. Dicek ulang tanggal 4 September 2026 dengan `diff` baris-per-baris terhadap file original — hasilnya identik dengan yang dilaporkan di sini (33 baris berubah, seluruhnya di dalam 3 fungsi §1–§3), dan `node -c script.js` tetap valid tanpa error sintaks.
+Hanya 3 fungsi di atas (§1–§3) yang berubah untuk bagian ATM ID/TID, total 3 blok fallback ditambahkan, nol baris lama dihapus/diubah urutannya. Tidak ada perubahan di `calculateDISP`, `calculateDEP`, `calculateINIT`, `calculateREM`, deteksi periode/marker, proses merge-sort-dedup, maupun `SUMMARY_EXTRACTORS`/modal SUMMARY. (Lihat §8 untuk cakupan perubahan ZIP yang ditambahkan belakangan di file ini.) `index.html`, `style.css`, dan `README.md` tidak disentuh sama sekali oleh §1–§3 maupun §8.
 
 ## 6. Metodologi & hasil pengujian otomatis (4 September 2026)
 
@@ -53,6 +53,20 @@ Setelah user mengirim potongan EJ asli NCR & CRM Hitachi, dijalankan 22 test oto
 
 **Hasil: 22/22 lulus, 0 gagal.** Tidak ada card/rekening/saldo nasabah dari sampel log yang disertakan di changelog ini maupun di file aplikasi mana pun — hanya nomor mesin (ATM ID/TID) yang dikutip sebagai bukti, karena itu satu-satunya field yang relevan dengan perbaikan ini.
 
-## 7. Status
+## 7. Status (§1–§3)
 
-Semua 3 fix (§1–§3) sudah **terverifikasi** dengan log produksi asli. Tidak ada rekomendasi tertunda dari investigasi ini.
+Semua 3 fix ATM ID/TID (§1–§3) sudah **terverifikasi** dengan log produksi asli.
+
+## 8. [Upload ZIP - berlaku semua mesin] `extractZipContents()` — TERKONFIRMASI & DIPERBAIKI (4 Sep 2026)
+
+**Trigger:** Laporan user — upload ZIP berisi banyak file .jrn hanya sebagian yang terbaca aplikasi, padahal upload file .jrn langsung (tanpa di-zip) semuanya terbaca.
+
+**Root cause:** ada batas keras `if (totalChars > 10000000) break;` — begitu total karakter gabungan seluruh sub-file dalam ZIP lewat ~10MB, loop pembacaan langsung berhenti dan SISA sub-file yang belum diproses tidak pernah dicoba dibaca sama sekali. Yang membuat ini sulit disadari: fungsi tetap melapor `success: true` dan `skippedCount: 0` — tidak ada satu pun sinyal ke pengguna bahwa sebagian file dilewati. Batas ini HANYA ada di jalur ZIP; jalur upload file langsung (FileReader biasa) tidak punya batas serupa, sehingga data yang identik diperlakukan berbeda tergantung apakah di-zip dulu atau tidak. Dari komentarnya ("sama seperti sebelumnya"), batas ini kemungkinan peninggalan versi lama sebelum isi ZIP dipecah jadi entri per-file (lih. catatan FIX di baris ~622) dan tidak sempat ditinjau ulang.
+
+**Fix:** baris pembatas dihapus. Tidak ada logika lain yang diubah — urutan pemrosesan file, penanganan file gagal/kosong (`skippedCount`), dan alur ke `mergeSortDedupLogs` persis sama seperti sebelumnya.
+
+**Verifikasi:** dijalankan `extractZipContents()` yang asli (bukan tulis ulang) lewat Node+JSZip terhadap ZIP simulasi berisi 7 file @2MB (persis ukuran file harian TID 161084 yang sebenarnya) — sebelum fix: 5/7 file lolos, 2 file terakhir hilang tanpa keterangan apa pun; setelah fix: 7/7 lolos. Diuji juga skenario lebih besar (30 file @2,6MB = ~78MB, setara sebulan penuh di hari tersibuk) — 30/30 file lolos, tidak ada batas tersembunyi lain yang ketemu.
+
+## 9. Status keseluruhan
+
+Semua 4 fix (§1–§3, §8) sudah **terverifikasi** — §1 dan §8 dengan pembuktian langsung/simulasi terukur, §2 dan §3 dengan log produksi asli dari user. Dicek ulang tgl 4 September 2026: `diff` baris-per-baris `script.js` vs file original menunjukkan 44 baris berubah total, seluruhnya berada di dalam 4 fungsi ini (§1–§3, §8) — tidak ada baris lain yang tersentuh di seluruh file, dan `node -c script.js` tetap valid tanpa error sintaks. Tidak ada rekomendasi tertunda dari investigasi-investigasi di changelog ini.
