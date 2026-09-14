@@ -1661,6 +1661,16 @@ class DataFilterCRMHitachi {
             const match = line.match(/Terminal ID\s*\[\s*(\d+)\s*\]/);
             if (match) return match[1];
         }
+        // FIX (konsistensi, belum terverifikasi ke log Hitachi asli): pola bracket
+        // "Terminal ID [xxx]" tetap dicoba lebih dulu (perilaku lama tidak dihapus -
+        // Hitachi adalah mesin paling tervalidasi di app ini). Hitachi ikut disebut
+        // di komentar STANDARD_TRX_DEDUP_REGEX sebagai mesin yang strukturnya memakai
+        // label "ATM ID :" juga, jadi fallback ini ditambahkan sebagai jaring pengaman
+        // saja kalau suatu saat file yg diupload tidak memuat pola bracket tsb.
+        for (const line of lines) {
+            const match = line.match(/ATM ID\s*:\s*(\d+)/);
+            if (match) return match[1];
+        }
         return "Not Found";
     }
 
@@ -6324,7 +6334,15 @@ function displayHyosungResult(list, id) {
 
 function findHyosungATM_ID(logText) {
     const match = logText.match(/Terminal Id\s*:\s*(\d+)/);
-    return match ? match[1] : "Not Found";
+    if (match) return match[1];
+    // FIX (konsistensi kartu ATM ID vs SUMMARY): log Hyosung real yang diperiksa
+    // ternyata TIDAK memuat label "Terminal Id :" sama sekali - yang ada adalah
+    // "ATM ID :" pada tiap struk transaksi (pola yang sama dipakai findATM_ID()
+    // untuk fitur SUMMARY, dan sudah tervalidasi utk Hyosung di STANDARD_TRX_DEDUP_REGEX).
+    // Pola lama tetap dicoba dulu (tidak menghapus perilaku yang sudah ada) baru fallback
+    // ke pola ini kalau tidak ketemu, supaya kartu ATM ID tidak lagi tampil "Not Found".
+    const fallback = logText.match(/ATM ID\s*:\s*(\d+)/);
+    return fallback ? fallback[1] : "Not Found";
 }
 
 function displayHyosungATM_ID(atmID) { document.getElementById('hyosungAtmId').textContent = `${atmID}`; }
@@ -6427,8 +6445,17 @@ function displayNcrResult(list, id) {
 }
 
 function findNcrATM_ID(logText) {
-    const match = cleanAnsiCodes(logText).match(/MACHINE\s+NO\s*:\s*(\d+)/);
-    return match ? match[1] : "Not Found";
+    const cleaned = cleanAnsiCodes(logText);
+    const match = cleaned.match(/MACHINE\s+NO\s*:\s*(\d+)/);
+    if (match) return match[1];
+    // FIX (konsistensi, belum terverifikasi ke log NCR asli): pola "MACHINE NO :"
+    // tetap dicoba lebih dulu (perilaku lama tidak dihapus). NCR ikut disebut di
+    // komentar STANDARD_TRX_DEDUP_REGEX sebagai mesin yang strukturnya memakai
+    // label "ATM ID :" juga - fallback ini ditambahkan supaya kartu ATM ID tidak
+    // "Not Found" kalau file yg diupload ternyata tidak memuat "MACHINE NO :".
+    // Mohon dicek ulang dengan log NCR produksi utk memastikan.
+    const fallback = cleaned.match(/ATM ID\s*:\s*(\d+)/);
+    return fallback ? fallback[1] : "Not Found";
 }
 
 function displayNcrATM_ID(atmID) { document.getElementById('ncrAtmId').textContent = `${atmID}`; }
